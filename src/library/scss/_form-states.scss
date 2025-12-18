@@ -1,0 +1,257 @@
+/**
+ * FormGuardian Form Validation State Styles
+ */
+
+@use 'mixins' as *;
+
+// ==========================================
+// FIELD HIGHLIGHT
+// ==========================================
+
+.fg-field-highlight {
+  box-shadow: var(--fg-highlight-glow) !important;
+  border-color: var(--fg-highlight-border) !important;
+  background-color: var(--fg-highlight-color) !important;
+}
+
+// ==========================================
+// PENDING STATE (Async validation)
+// ==========================================
+
+.fg-pending {
+  position: relative;
+  pointer-events: none;
+
+  &::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    right: 10px;
+    width: 16px;
+    height: 16px;
+    margin-top: -8px;
+    border: 2px solid var(--fg-border-color);
+    border-top-color: var(--fg-color-primary);
+    border-radius: 50%;
+    animation: fg-spinner 0.6s linear infinite;
+  }
+}
+
+@keyframes fg-spinner {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+// ==========================================
+// ERROR MESSAGES
+// ==========================================
+
+.fg-error-message {
+  display: block;
+  margin-top: var(--fg-spacing-xs);
+  color: var(--fg-text-error);
+  font-size: var(--fg-font-size-sm);
+  @include fade-in;
+}
+
+// ==========================================
+// BOOTSTRAP 3 OVERRIDES
+// ==========================================
+
+// BS3 uses .has-error on .form-group
+.has-error {
+  .form-control {
+    border-color: var(--fg-color-error);
+
+    &:focus {
+      border-color: var(--fg-color-error);
+      @include focus-ring-error;
+    }
+  }
+
+  .control-label,
+  .help-block,
+  .fg-error-message {
+    color: var(--fg-text-error);
+  }
+}
+
+.has-success {
+  .form-control {
+    border-color: var(--fg-color-success);
+
+    &:focus {
+      border-color: var(--fg-color-success);
+      @include focus-ring-success;
+    }
+  }
+}
+
+// ==========================================
+// BOOTSTRAP 4/5 OVERRIDES
+// ==========================================
+
+// Enhanced is-invalid styling
+.is-invalid {
+  border-color: var(--fg-color-error) !important;
+
+  &:focus {
+    border-color: var(--fg-color-error) !important;
+    @include focus-ring-error;
+  }
+
+  // Highlight state
+  &.fg-field-highlight {
+    box-shadow: var(--fg-highlight-glow) !important;
+    background-color: var(--fg-highlight-color) !important;
+  }
+}
+
+.is-valid {
+  border-color: var(--fg-color-success) !important;
+
+  &:focus {
+    border-color: var(--fg-color-success) !important;
+    @include focus-ring-success;
+  }
+}
+
+// Enhanced feedback messages
+.invalid-feedback {
+  color: var(--fg-text-error);
+  font-size: var(--fg-font-size-sm);
+
+  &.fg-error-message {
+    display: block !important; // Override BS default
+  }
+}
+
+.valid-feedback {
+  color: var(--fg-text-success);
+  font-size: var(--fg-font-size-sm);
+}
+
+// ==========================================
+// INPUT GROUP FIXES
+// ==========================================
+
+.input-group {
+  // BS4/5: Ensure feedback shows correctly
+  &.has-validation {
+    .invalid-feedback,
+    .valid-feedback {
+      width: 100%;
+    }
+  }
+
+  // Handle error styling on group
+  &:has(.is-invalid) {
+    .input-group-text {
+      border-color: var(--fg-color-error);
+    }
+  }
+
+  &:has(.is-valid) {
+    .input-group-text {
+      border-color: var(--fg-color-success);
+    }
+  }
+}
+
+// ==========================================
+// FORM CHECK (Checkbox/Radio)
+// ==========================================
+
+.form-check-input {
+  &.is-invalid {
+    border-color: var(--fg-color-error);
+
+    &:checked {
+      background-color: var(--fg-color-error);
+    }
+
+    ~ .form-check-label {
+      color: var(--fg-text-error);
+    }
+  }
+
+  &.is-valid {
+    border-color: var(--fg-color-success);
+
+    &:checked {
+      background-color: var(--fg-color-success);
+    }
+  }
+}
+
+// ==========================================
+// SELECT
+// ==========================================
+
+select.is-invalid {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' width='12' height='12' fill='none' stroke='%23dc3545'%3e%3ccircle cx='6' cy='6' r='4.5'/%3e%3cpath stroke-linejoin='round' d='M5.8 3.6h.4L6 6.5z'/%3e%3ccircle cx='6' cy='8.2' r='.6' fill='%23dc3545' stroke='none'/%3e%3c/svg%3e"),
+    url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
+  background-position: right 0.75rem center, center right 2.25rem;
+  background-size: 12px 12px, 16px 12px;
+  padding-right: 4.125rem;
+}
+
+// ==========================================
+// FORM FLOATING (BS5)
+// ==========================================
+
+.form-floating {
+  > .form-control.is-invalid,
+  > .form-select.is-invalid {
+    ~ label {
+      color: var(--fg-text-error);
+    }
+  }
+
+  > .form-control.is-valid,
+  > .form-select.is-valid {
+    ~ label {
+      color: var(--fg-text-success);
+    }
+  }
+}
+
+// ==========================================
+// ACCESSIBILITY
+// ==========================================
+
+// High contrast mode support
+@media (prefers-contrast: high) {
+  .is-invalid {
+    border-width: 2px;
+  }
+
+  .fg-error-message,
+  .invalid-feedback {
+    font-weight: var(--fg-font-weight-bold);
+  }
+
+  .fg-field-highlight {
+    outline: 3px solid var(--fg-highlight-border);
+    outline-offset: 2px;
+  }
+}
+
+// Reduced motion
+@media (prefers-reduced-motion: reduce) {
+  .fg-pending::after {
+    animation: none;
+    opacity: 0.5;
+  }
+
+  .fg-error-message,
+  .fg-error-item {
+    animation: none;
+  }
+
+  .fg-error-container,
+  .fg-error-body {
+    transition: none;
+  }
+}

@@ -1,0 +1,141 @@
+/**
+ * FormGuardian CSS Custom Properties (Variables)
+ * All themeable values are defined here
+ */
+
+:root {
+  // ==========================================
+  // COLORS
+  // ==========================================
+
+  // Primary colors
+  --fg-color-primary: #0d6efd;
+  --fg-color-primary-hover: #0b5ed7;
+  --fg-color-primary-light: rgba(13, 110, 253, 0.1);
+
+  // State colors
+  --fg-color-success: #198754;
+  --fg-color-success-light: rgba(25, 135, 84, 0.1);
+  --fg-color-error: #dc3545;
+  --fg-color-error-light: rgba(220, 53, 69, 0.1);
+  --fg-color-warning: #ffc107;
+  --fg-color-warning-light: rgba(255, 193, 7, 0.1);
+  --fg-color-info: #0dcaf0;
+
+  // ==========================================
+  // BACKGROUNDS
+  // ==========================================
+
+  --fg-bg-primary: #ffffff;
+  --fg-bg-secondary: #f8f9fa;
+  --fg-bg-tertiary: #e9ecef;
+  --fg-bg-error-container: #ffffff;
+  --fg-bg-sidebar: #ffffff;
+  --fg-bg-header: #ffffff;
+  --fg-bg-overlay: rgba(0, 0, 0, 0.5);
+
+  // ==========================================
+  // TEXT
+  // ==========================================
+
+  --fg-text-primary: #212529;
+  --fg-text-secondary: #6c757d;
+  --fg-text-muted: #adb5bd;
+  --fg-text-inverse: #ffffff;
+  --fg-text-error: #dc3545;
+  --fg-text-success: #198754;
+
+  // ==========================================
+  // BORDERS
+  // ==========================================
+
+  --fg-border-color: #dee2e6;
+  --fg-border-color-light: #e9ecef;
+  --fg-border-color-dark: #ced4da;
+  --fg-border-radius: 0.375rem;
+  --fg-border-radius-sm: 0.25rem;
+  --fg-border-radius-lg: 0.5rem;
+  --fg-border-width: 1px;
+
+  // ==========================================
+  // HIGHLIGHTS
+  // ==========================================
+
+  --fg-highlight-color: #fff3cd;
+  --fg-highlight-border: #ffc107;
+  --fg-highlight-text: #856404;
+  --fg-highlight-glow: 0 0 0 3px rgba(255, 193, 7, 0.25);
+
+  // ==========================================
+  // SHADOWS
+  // ==========================================
+
+  --fg-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+  --fg-shadow-sm: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+  --fg-shadow-lg: 0 1rem 3rem rgba(0, 0, 0, 0.175);
+  --fg-shadow-inset: inset 0 1px 2px rgba(0, 0, 0, 0.075);
+
+  // ==========================================
+  // SIZING
+  // ==========================================
+
+  // Error container
+  --fg-error-container-width: 320px;
+  --fg-error-container-max-height: 200px;
+  --fg-error-container-z-index: 1050;
+
+  // Sidebar
+  --fg-sidebar-width: 320px;
+  --fg-sidebar-min-width: 250px;
+  --fg-sidebar-max-width: 50vw;
+  --fg-sidebar-z-index: 1040;
+
+  // Header
+  --fg-header-height: 60px;
+
+  // ==========================================
+  // SPACING
+  // ==========================================
+
+  --fg-spacing-xs: 0.25rem;
+  --fg-spacing-sm: 0.5rem;
+  --fg-spacing-md: 1rem;
+  --fg-spacing-lg: 1.5rem;
+  --fg-spacing-xl: 2rem;
+
+  // ==========================================
+  // TYPOGRAPHY
+  // ==========================================
+
+  --fg-font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --fg-font-family-mono: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  --fg-font-size-base: 1rem;
+  --fg-font-size-sm: 0.875rem;
+  --fg-font-size-xs: 0.75rem;
+  --fg-font-size-lg: 1.125rem;
+  --fg-line-height: 1.5;
+  --fg-font-weight-normal: 400;
+  --fg-font-weight-medium: 500;
+  --fg-font-weight-bold: 600;
+
+  // ==========================================
+  // TRANSITIONS
+  // ==========================================
+
+  --fg-transition-speed: 0.2s;
+  --fg-transition-speed-fast: 0.1s;
+  --fg-transition-speed-slow: 0.3s;
+  --fg-transition-easing: ease-in-out;
+
+  // ==========================================
+  // Z-INDEX LAYERS
+  // ==========================================
+
+  --fg-z-dropdown: 1000;
+  --fg-z-sticky: 1020;
+  --fg-z-fixed: 1030;
+  --fg-z-sidebar: 1040;
+  --fg-z-error-container: 1050;
+  --fg-z-modal: 1060;
+  --fg-z-tooltip: 1070;
+}

@@ -1,0 +1,258 @@
+/**
+ * FormGuardian SCSS Mixins
+ */
+
+// ==========================================
+// TRANSITIONS
+// ==========================================
+
+@mixin transition($properties: all) {
+  transition: $properties var(--fg-transition-speed) var(--fg-transition-easing);
+}
+
+@mixin transition-fast($properties: all) {
+  transition: $properties var(--fg-transition-speed-fast) var(--fg-transition-easing);
+}
+
+@mixin transition-slow($properties: all) {
+  transition: $properties var(--fg-transition-speed-slow) var(--fg-transition-easing);
+}
+
+// ==========================================
+// SHADOWS
+// ==========================================
+
+@mixin shadow {
+  box-shadow: var(--fg-shadow);
+}
+
+@mixin shadow-sm {
+  box-shadow: var(--fg-shadow-sm);
+}
+
+@mixin shadow-lg {
+  box-shadow: var(--fg-shadow-lg);
+}
+
+// ==========================================
+// BORDERS
+// ==========================================
+
+@mixin border {
+  border: var(--fg-border-width) solid var(--fg-border-color);
+}
+
+@mixin border-radius {
+  border-radius: var(--fg-border-radius);
+}
+
+@mixin border-radius-sm {
+  border-radius: var(--fg-border-radius-sm);
+}
+
+@mixin border-radius-lg {
+  border-radius: var(--fg-border-radius-lg);
+}
+
+// ==========================================
+// FOCUS STATES
+// ==========================================
+
+@mixin focus-ring {
+  outline: none;
+  box-shadow: 0 0 0 0.25rem var(--fg-color-primary-light);
+}
+
+@mixin focus-ring-error {
+  outline: none;
+  box-shadow: 0 0 0 0.25rem var(--fg-color-error-light);
+}
+
+@mixin focus-ring-success {
+  outline: none;
+  box-shadow: 0 0 0 0.25rem var(--fg-color-success-light);
+}
+
+// ==========================================
+// TYPOGRAPHY
+// ==========================================
+
+@mixin text-truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@mixin text-sm {
+  font-size: var(--fg-font-size-sm);
+}
+
+@mixin text-xs {
+  font-size: var(--fg-font-size-xs);
+}
+
+// ==========================================
+// SCROLLBAR
+// ==========================================
+
+@mixin custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: var(--fg-border-color) transparent;
+
+  &::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background-color: var(--fg-border-color);
+    border-radius: 3px;
+
+    &:hover {
+      background-color: var(--fg-border-color-dark);
+    }
+  }
+}
+
+// ==========================================
+// BUTTONS
+// ==========================================
+
+@mixin button-reset {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  outline: none;
+}
+
+@mixin button-base {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--fg-spacing-sm) var(--fg-spacing-md);
+  font-size: var(--fg-font-size-sm);
+  font-weight: var(--fg-font-weight-medium);
+  line-height: 1.5;
+  text-align: center;
+  text-decoration: none;
+  vertical-align: middle;
+  cursor: pointer;
+  user-select: none;
+  @include border;
+  @include border-radius;
+  @include transition;
+
+  &:focus {
+    @include focus-ring;
+  }
+
+  &:disabled {
+    opacity: 0.65;
+    pointer-events: none;
+  }
+}
+
+// ==========================================
+// FLEX UTILITIES
+// ==========================================
+
+@mixin flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@mixin flex-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+// ==========================================
+// POSITION UTILITIES
+// ==========================================
+
+@mixin absolute-fill {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+}
+
+@mixin fixed-bottom-left {
+  position: fixed;
+  bottom: var(--fg-spacing-md);
+  left: var(--fg-spacing-md);
+}
+
+@mixin fixed-bottom-right {
+  position: fixed;
+  bottom: var(--fg-spacing-md);
+  right: var(--fg-spacing-md);
+}
+
+// ==========================================
+// ACCESSIBILITY
+// ==========================================
+
+@mixin visually-hidden {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+// ==========================================
+// ANIMATIONS
+// ==========================================
+
+@mixin fade-in {
+  animation: fg-fade-in var(--fg-transition-speed) var(--fg-transition-easing);
+}
+
+@mixin slide-in-up {
+  animation: fg-slide-in-up var(--fg-transition-speed) var(--fg-transition-easing);
+}
+
+@keyframes fg-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fg-slide-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fg-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}

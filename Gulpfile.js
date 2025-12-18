@@ -6,7 +6,7 @@ const gulpLoadPlugins = require("gulp-load-plugins");
 const plugins = gulpLoadPlugins();
 const noop = require("gulp-noop");
 const uglify = require("gulp-uglify-es").default;
-const rollup = require("gulp-better-rollup");
+const { rollup } = require("rollup");
 const rollupBabel = require("@rollup/plugin-babel").default;
 const rollupResolve = require("@rollup/plugin-node-resolve").default;
 const rollupCommonjs = require("@rollup/plugin-commonjs");
@@ -14,6 +14,8 @@ const sass = require("gulp-sass")(require("sass"));
 const javascriptObfuscator = require("gulp-javascript-obfuscator");
 const path = require("path");
 const rev = require("gulp-rev");
+const Vinyl = require("vinyl");
+const { Readable } = require("stream");
 
 // Configurable options (adjusted for your structure)
 const config = {
@@ -95,64 +97,85 @@ async function runPipeline(entries, taskFn) {
 // Asset helpers
 
 function addAllStyles(done) {
-  const includeConfigBuilder = process.env.INCLUDE_CONFIG_BUILDER === "true";
-  const entries = getStyleEntries(includeConfigBuilder).map(
-    ([srcArr, outName]) =>
-      gulp
-        .src(srcArr)
-        .pipe(plugins.plumber({ errorHandler: onError }))
-        .pipe(useSourceMaps() ? plugins.sourcemaps.init() : noop())
-        .pipe(sass())
-        .pipe(plugins.concat(outName))
-        .pipe(isProduction() ? plugins.cleanCss() : noop())
-        .pipe(rev())
-        .pipe(useSourceMaps() ? plugins.sourcemaps.write(".") : noop())
-        .pipe(gulp.dest(config.cssOutDir))
+  const entries = styleEntries.map(([srcArr, outName]) =>
+    gulp
+      .src(srcArr)
+      .pipe(plugins.plumber({ errorHandler: onError }))
+      .pipe(useSourceMaps() ? plugins.sourcemaps.init() : noop())
+      .pipe(sass())
+      .pipe(plugins.concat(outName))
+      .pipe(isProduction() ? plugins.cleanCss() : noop())
+      .pipe(rev())
+      .pipe(useSourceMaps() ? plugins.sourcemaps.write(".") : noop())
+      .pipe(gulp.dest(config.cssOutDir))
   );
   return require("merge-stream")(...entries)
     .pipe(rev.manifest(config.cssManifestPath))
     .pipe(gulp.dest("."));
 }
 
+// Helper to create vinyl stream from rollup bundle
+async function rollupBundle(inputPath, outputName, format, globalName) {
+  const bundle = await rollup({
+    input: inputPath,
+    plugins: [
+      rollupResolve({ browser: true }),
+      rollupCommonjs(),
+      rollupBabel({
+        babelHelpers: "bundled",
+        babelrc: false,
+        exclude: "node_modules/**",
+      }),
+    ],
+  });
+
+  const { output } = await bundle.generate({
+    format,
+    name: globalName,
+    inlineDynamicImports: true,
+    sourcemap: useSourceMaps(),
+  });
+
+  await bundle.close();
+
+  const chunk = output[0];
+  const file = new Vinyl({
+    path: outputName,
+    contents: Buffer.from(chunk.code),
+  });
+
+  if (chunk.map && useSourceMaps()) {
+    file.sourceMap = chunk.map;
+  }
+
+  return file;
+}
+
 // ESM output (for <script type="module">)
 
-function addAllScriptsESM() {
-  const includeConfigBuilder = process.env.INCLUDE_CONFIG_BUILDER === "true";
-  const entries = getScriptEntries(includeConfigBuilder).map(
-    ([srcArr, outName]) =>
-      gulp
-        .src(srcArr)
-        .pipe(plugins.plumber({ errorHandler: onError }))
-        .pipe(useSourceMaps() ? plugins.sourcemaps.init() : noop())
-        .pipe(
-          rollup(
-            {
-              plugins: [
-                rollupResolve({ browser: true }),
-                rollupCommonjs(),
-                rollupBabel({
-                  babelHelpers: "bundled",
-                  babelrc: false,
-                  exclude: "node_modules/**",
-                }),
-              ],
-            },
-            {
-              format: "esm",
-              inlineDynamicImports: true, // Inline dynamic imports to avoid code-splitting
-            }
-          )
-        )
-        .pipe(plugins.concat(outName))
-        .pipe(isProduction() ? uglify() : noop())
-        .pipe(isProduction() ? javascriptObfuscator() : noop())
-        .pipe(rev())
-        .pipe(useSourceMaps() ? plugins.sourcemaps.write(".") : noop())
-        .pipe(gulp.dest(config.jsOutDir))
+async function addAllScriptsESM() {
+  const files = await Promise.all(
+    scriptEntries.map(([srcArr, outName]) =>
+      rollupBundle(srcArr[0], outName, "esm", undefined)
+    )
   );
-  return require("merge-stream")(...entries)
-    .pipe(rev.manifest(config.jsManifestPath))
-    .pipe(gulp.dest("."));
+
+  const stream = Readable.from(files, { objectMode: true });
+
+  return new Promise((resolve, reject) => {
+    stream
+      .pipe(plugins.plumber({ errorHandler: onError }))
+      .pipe(useSourceMaps() ? plugins.sourcemaps.init({ loadMaps: true }) : noop())
+      .pipe(isProduction() ? uglify() : noop())
+      .pipe(isProduction() ? javascriptObfuscator() : noop())
+      .pipe(rev())
+      .pipe(useSourceMaps() ? plugins.sourcemaps.write(".") : noop())
+      .pipe(gulp.dest(config.jsOutDir))
+      .pipe(rev.manifest(config.jsManifestPath))
+      .pipe(gulp.dest("."))
+      .on("end", resolve)
+      .on("error", reject);
+  });
 }
 
 // IIFE output (for <script nomodule>)
@@ -161,44 +184,30 @@ const iifeNames = {
   "form-guardian.js": "FormGuardian", // Library bundle - expose as global
 };
 
-function addAllScriptsIIFE() {
-  const includeConfigBuilder = process.env.INCLUDE_CONFIG_BUILDER === "true";
-  const entries = getScriptEntries(includeConfigBuilder).map(
-    ([srcArr, outName]) =>
-      gulp
-        .src(srcArr)
-        .pipe(plugins.plumber({ errorHandler: onError }))
-        .pipe(useSourceMaps() ? plugins.sourcemaps.init() : noop())
-        .pipe(
-          rollup(
-            {
-              plugins: [
-                rollupResolve({ browser: true }),
-                rollupCommonjs(),
-                rollupBabel({
-                  babelHelpers: "bundled",
-                  babelrc: false,
-                  exclude: "node_modules/**",
-                }),
-              ],
-            },
-            {
-              format: "iife",
-              name: iifeNames[outName] || undefined, // Only use name for library entries
-              inlineDynamicImports: true, // Inline dynamic imports for IIFE compatibility
-            }
-          )
-        )
-        .pipe(plugins.concat(outName.replace(/\.js$/, ".iife.js")))
-        .pipe(isProduction() ? uglify() : noop())
-        .pipe(isProduction() ? javascriptObfuscator() : noop())
-        .pipe(rev())
-        .pipe(useSourceMaps() ? plugins.sourcemaps.write(".") : noop())
-        .pipe(gulp.dest(config.jsOutDir))
+async function addAllScriptsIIFE() {
+  const files = await Promise.all(
+    scriptEntries.map(([srcArr, outName]) => {
+      const iifeOutName = outName.replace(/\.js$/, ".iife.js");
+      return rollupBundle(srcArr[0], iifeOutName, "iife", iifeNames[outName]);
+    })
   );
-  return require("merge-stream")(...entries)
-    .pipe(rev.manifest(config.jsManifestPath, { merge: true }))
-    .pipe(gulp.dest("."));
+
+  const stream = Readable.from(files, { objectMode: true });
+
+  return new Promise((resolve, reject) => {
+    stream
+      .pipe(plugins.plumber({ errorHandler: onError }))
+      .pipe(useSourceMaps() ? plugins.sourcemaps.init({ loadMaps: true }) : noop())
+      .pipe(isProduction() ? uglify() : noop())
+      .pipe(isProduction() ? javascriptObfuscator() : noop())
+      .pipe(rev())
+      .pipe(useSourceMaps() ? plugins.sourcemaps.write(".") : noop())
+      .pipe(gulp.dest(config.jsOutDir))
+      .pipe(rev.manifest(config.jsManifestPath, { merge: true }))
+      .pipe(gulp.dest("."))
+      .on("end", resolve)
+      .on("error", reject);
+  });
 }
 
 function onError(err) {
@@ -219,43 +228,15 @@ gulp.task("clean", async function () {
   await rimraf("dist/**", { glob: true });
 });
 
-// Default entries (without ConfigBuilder)
 const styleEntries = [
-  [[config.libCssDir + "/index.scss"], "media-hub.css"],
+  [[config.libCssDir + "/index.scss"], "form-guardian.css"],
   [[config.assetsCssDir + "/main.scss"], "main.css"],
 ];
 
-// ConfigBuilder style entry (separate)
-const configBuilderStyleEntry = [
-  [[config.libCssDir + "/config-builder.scss"], "config-builder.css"],
-];
-
-// Default entries (without ConfigBuilder)
 const scriptEntries = [
-  [[config.libJsDir + "/index.js"], "media-hub.js"],
+  [[config.libJsDir + "/index.js"], "form-guardian.js"],
   [[config.assetsJsDir + "/main.js"], "main.js"],
-  [[config.assetsJsDir + "/bootstrap_3.js"], "bootstrap_3.js"],
-  [[config.assetsJsDir + "/bootstrap_4.js"], "bootstrap_4.js"],
-  [[config.assetsJsDir + "/bootstrap_5.js"], "bootstrap_5.js"],
 ];
-
-// ConfigBuilder script entry (separate)
-const configBuilderScriptEntry = [
-  [[config.libJsDir + "/config-builder.js"], "config-builder.js"],
-];
-
-// Helper functions to get entries based on build mode
-function getScriptEntries(includeConfigBuilder = false) {
-  return includeConfigBuilder
-    ? [...scriptEntries, ...configBuilderScriptEntry]
-    : scriptEntries;
-}
-
-function getStyleEntries(includeConfigBuilder = false) {
-  return includeConfigBuilder
-    ? [...styleEntries, ...configBuilderStyleEntry]
-    : styleEntries;
-}
 
 gulp.task("styles", gulp.series("clean-css", addAllStyles));
 
@@ -273,33 +254,15 @@ gulp.task("scripts-clean", gulp.series("scripts", "clean-old-js"));
 // Watch task
 
 gulp.task("watch", function () {
-  const includeConfigBuilder = process.env.INCLUDE_CONFIG_BUILDER === "true";
+  gulp.watch(
+    [config.libCssDir + "/**/*.scss", config.assetsCssDir + "/**/*.scss"],
+    gulp.series("styles-clean")
+  );
 
-  // Watch library SCSS (exclude config-builder if not included)
-  const scssGlob = includeConfigBuilder
-    ? [config.libCssDir + "/**/*.scss", config.assetsCssDir + "/**/*.scss"]
-    : [
-        config.libCssDir + "/**/*.scss",
-        "!" + config.libCssDir + "/config-builder.scss",
-        "!" + config.libCssDir + "/components/config-builder/**/*.scss",
-        "!" + config.libCssDir + "/components/_config-builder.scss",
-        config.assetsCssDir + "/**/*.scss",
-      ];
-
-  gulp.watch(scssGlob, gulp.series("styles-clean"));
-
-  // Watch library JS (exclude config-builder if not included)
-  const jsGlob = includeConfigBuilder
-    ? [config.libJsDir + "/**/*.js", config.assetsJsDir + "/**/*.js"]
-    : [
-        config.libJsDir + "/**/*.js",
-        "!" + config.libJsDir + "/config-builder.js",
-        "!" + config.libJsDir + "/components/ConfigBuilder.js",
-        "!" + config.libJsDir + "/components/config-builder/**/*.js",
-        config.assetsJsDir + "/**/*.js",
-      ];
-
-  gulp.watch(jsGlob, gulp.series("scripts-clean"));
+  gulp.watch(
+    [config.libJsDir + "/**/*.js", config.assetsJsDir + "/**/*.js"],
+    gulp.series("scripts-clean")
+  );
 });
 
 // Default and dev/prod tasks (must be last)
@@ -310,21 +273,11 @@ gulp.task(
 
 // Default and dev/prod tasks (must be last)
 gulp.task("dev", gulp.series("clean", "styles-clean", "scripts-clean"));
+
 // Prod task: set NODE_ENV and run the full clean/build without sourcemaps
 gulp.task(
   "prod",
   gulp.series(setProdEnv, "clean", "styles-clean", "scripts-clean")
 );
-
-// Build with ConfigBuilder included
-gulp.task("with-config-builder", (done) => {
-  process.env.INCLUDE_CONFIG_BUILDER = "true";
-
-  if (isProduction()) {
-    gulp.series(setProdEnv, "clean", "styles-clean", "scripts-clean")(done);
-  } else {
-    gulp.series("clean", "styles-clean", "scripts-clean", "watch")(done);
-  }
-});
 
 gulp.task("default", gulp.series("dev"));

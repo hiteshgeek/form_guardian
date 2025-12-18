@@ -1,0 +1,19 @@
+/**
+ * FormGuardian Demo Styles
+ * Main entry point for demo application styles
+ */
+
+// Demo Variables
+@use 'variables';
+
+// Demo Layout
+@use 'layout';
+
+// Sidebar Styles
+@use 'sidebar';
+
+// Theme Switcher
+@use 'theme-switcher';
+
+// Notifications
+@use 'notifications';

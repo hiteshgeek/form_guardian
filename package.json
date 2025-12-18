@@ -1,5 +1,5 @@
 {
-  "name": "media-hub",
+  "name": "form-guardian",
   "devDependencies": {
     "@babel/core": "^7.28.5",
     "@babel/plugin-proposal-class-properties": "^7.18.6",
@@ -8,12 +8,12 @@
     "@rollup/plugin-babel": "^6.1.0",
     "@rollup/plugin-commonjs": "^29.0.0",
     "@rollup/plugin-node-resolve": "^16.0.3",
+    "@rollup/stream": "^3.0.1",
     "chokidar": "^3.5.3",
     "concurrently": "^8.2.0",
     "core-js": "^3.46.0",
     "cross-env": "^10.1.0",
     "del": "^8.0.1",
-    "gulp-better-rollup": "^4.0.1",
     "gulp-clean-css": "^4.3.0",
     "gulp-concat": "^2.6.1",
     "gulp-if": "^3.0.0",
@@ -29,18 +29,17 @@
     "postcss-preset-env": "^10.4.0",
     "rimraf": "^6.1.0",
     "rollup": "^4.53.3",
-    "sass": "^1.93.3",
-    "vite": "^5.0.0"
+    "sass": "^1.93.3"
   },
   "scripts": {
     "dev": "gulp dev",
+    "dev:watch": "gulp dev_with_watch",
     "prod": "NODE_ENV=production gulp prod",
-    "clean": "gulp clean",
-    "with-config-builder": "gulp with-config-builder",
-    "with-config-builder:prod": "NODE_ENV=production gulp with-config-builder"
+    "clean": "gulp clean"
   },
   "dependencies": {
-    "@fix-webm-duration/fix": "^1.0.1",
-    "gulp": "^4.0.2"
+    "gulp": "^4.0.2",
+    "merge-stream": "^2.0.0",
+    "vinyl": "^3.0.0"
   }
 }

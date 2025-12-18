@@ -1,0 +1,29 @@
+/**
+ * FormGuardian Demo - CSS Variables
+ */
+
+:root {
+  // Demo Layout
+  --fg-demo-header-height: 60px;
+  --fg-demo-sidebar-width: 340px;
+  --fg-demo-sidebar-min-width: 280px;
+  --fg-demo-sidebar-max-width: 500px;
+
+  // Demo Colors (light)
+  --fg-demo-header-bg: #1a1a2e;
+  --fg-demo-header-text: #ffffff;
+  --fg-demo-sidebar-bg: var(--fg-bg-primary);
+  --fg-demo-main-bg: var(--fg-bg-secondary);
+  --fg-demo-border: var(--fg-border-color);
+
+  // Demo Typography
+  --fg-demo-font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+// Dark theme overrides for demo
+[data-theme="dark"] {
+  --fg-demo-header-bg: #0f0f1a;
+  --fg-demo-sidebar-bg: var(--fg-bg-primary);
+  --fg-demo-main-bg: var(--fg-bg-secondary);
+  --fg-demo-border: var(--fg-border-color);
+}

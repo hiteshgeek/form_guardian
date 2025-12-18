@@ -1,0 +1,196 @@
+/**
+ * FormGuardian Error Container Styles
+ */
+
+@use 'mixins' as *;
+
+// ==========================================
+// ERROR CONTAINER
+// ==========================================
+
+.fg-error-container {
+  position: fixed;
+  z-index: var(--fg-z-error-container);
+  width: var(--fg-error-container-width);
+  max-width: calc(100vw - var(--fg-spacing-lg));
+  background-color: var(--fg-bg-error-container);
+  border: var(--fg-border-width) solid var(--fg-border-color);
+  @include border-radius;
+  @include shadow;
+  @include transition;
+  font-family: var(--fg-font-family);
+  font-size: var(--fg-font-size-sm);
+  color: var(--fg-text-primary);
+
+  // Hidden state
+  &.fg-hidden {
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(20px);
+    pointer-events: none;
+  }
+
+  // Collapsed state
+  &.fg-collapsed {
+    .fg-error-body {
+      max-height: 0 !important;
+      padding: 0;
+      overflow: hidden;
+    }
+  }
+}
+
+// ==========================================
+// POSITION VARIANTS
+// ==========================================
+
+.fg-position-left-bottom {
+  @include fixed-bottom-left;
+}
+
+.fg-position-right-bottom {
+  @include fixed-bottom-right;
+}
+
+.fg-position-left-top {
+  position: fixed;
+  top: var(--fg-spacing-md);
+  left: var(--fg-spacing-md);
+}
+
+.fg-position-right-top {
+  position: fixed;
+  top: var(--fg-spacing-md);
+  right: var(--fg-spacing-md);
+}
+
+// ==========================================
+// HEADER
+// ==========================================
+
+.fg-error-header {
+  @include flex-between;
+  padding: var(--fg-spacing-sm) var(--fg-spacing-md);
+  background-color: var(--fg-color-error);
+  color: var(--fg-text-inverse);
+  border-radius: var(--fg-border-radius) var(--fg-border-radius) 0 0;
+  cursor: pointer;
+  user-select: none;
+
+  .fg-collapsed & {
+    border-radius: var(--fg-border-radius);
+  }
+}
+
+.fg-error-title-wrapper {
+  display: flex;
+  align-items: center;
+  gap: var(--fg-spacing-sm);
+
+  svg {
+    flex-shrink: 0;
+  }
+}
+
+.fg-error-title {
+  font-weight: var(--fg-font-weight-medium);
+}
+
+.fg-error-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 var(--fg-spacing-xs);
+  margin-left: auto;
+  margin-right: var(--fg-spacing-sm);
+  background-color: rgba(255, 255, 255, 0.2);
+  border-radius: 11px;
+  font-size: var(--fg-font-size-xs);
+  font-weight: var(--fg-font-weight-bold);
+}
+
+.fg-error-toggle {
+  @include button-reset;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--fg-border-radius-sm);
+  color: inherit;
+  @include transition;
+
+  &:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+  }
+
+  &:focus {
+    outline: 2px solid rgba(255, 255, 255, 0.5);
+    outline-offset: 2px;
+  }
+}
+
+// ==========================================
+// BODY
+// ==========================================
+
+.fg-error-body {
+  max-height: var(--fg-error-container-max-height);
+  overflow-y: auto;
+  @include custom-scrollbar;
+  transition: max-height var(--fg-transition-speed) var(--fg-transition-easing),
+              padding var(--fg-transition-speed) var(--fg-transition-easing);
+}
+
+// ==========================================
+// ERROR LIST
+// ==========================================
+
+.fg-error-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.fg-error-item {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fg-spacing-xs);
+  padding: var(--fg-spacing-sm) var(--fg-spacing-md);
+  border-bottom: var(--fg-border-width) solid var(--fg-border-color-light);
+  cursor: pointer;
+  @include transition;
+  @include fade-in;
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  &:hover {
+    background-color: var(--fg-color-error-light);
+  }
+
+  &:focus {
+    outline: none;
+    background-color: var(--fg-color-error-light);
+  }
+
+  // Highlight state
+  &.fg-error-highlight {
+    background-color: var(--fg-highlight-color);
+    border-left: 3px solid var(--fg-highlight-border);
+    padding-left: calc(var(--fg-spacing-md) - 3px);
+  }
+}
+
+.fg-error-item-label {
+  color: var(--fg-text-error);
+  font-weight: var(--fg-font-weight-medium);
+}
+
+.fg-error-item-message {
+  color: var(--fg-text-secondary);
+  word-break: break-word;
+}

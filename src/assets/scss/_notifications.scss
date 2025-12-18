@@ -1,0 +1,90 @@
+/**
+ * FormGuardian Demo - Notification Styles
+ */
+
+.fg-notification {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  min-width: 250px;
+  max-width: 400px;
+  padding: 1rem 1.25rem;
+  background-color: var(--fg-bg-primary);
+  border: 1px solid var(--fg-border-color);
+  border-radius: var(--fg-border-radius);
+  box-shadow: var(--fg-shadow-lg);
+  font-size: 0.875rem;
+  color: var(--fg-text-primary);
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.2s, transform 0.2s;
+
+  &.fg-notification-show {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  // Info style (default)
+  &.fg-notification-info {
+    border-left: 4px solid var(--fg-color-primary);
+  }
+
+  // Success style
+  &.fg-notification-success {
+    border-left: 4px solid var(--fg-color-success);
+    background-color: var(--fg-color-success-light);
+  }
+
+  // Error style
+  &.fg-notification-error {
+    border-left: 4px solid var(--fg-color-error);
+    background-color: var(--fg-color-error-light);
+  }
+
+  // Warning style
+  &.fg-notification-warning {
+    border-left: 4px solid var(--fg-color-warning);
+    background-color: var(--fg-color-warning-light);
+  }
+
+  span {
+    flex: 1;
+  }
+}
+
+.fg-notification-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  background: none;
+  border: none;
+  border-radius: var(--fg-border-radius-sm);
+  color: var(--fg-text-secondary);
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: background-color 0.2s, color 0.2s;
+
+  &:hover {
+    background-color: var(--fg-border-color);
+    color: var(--fg-text-primary);
+  }
+}
+
+// Mobile positioning
+@media (max-width: 576px) {
+  .fg-notification {
+    left: 1rem;
+    right: 1rem;
+    bottom: 5rem; // Above sidebar toggle
+    min-width: auto;
+    max-width: none;
+  }
+}
