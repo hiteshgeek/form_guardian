@@ -31,7 +31,63 @@ export class DemoApp {
     this.previewJsConfig = document.getElementById('preview-js-config');
     this.previewHtmlDom = document.getElementById('preview-html-dom');
 
+    // Define which rule categories and rules apply to which field types
+    this.fieldTypeRules = this.defineFieldTypeRules();
+
     this.init();
+  }
+
+  /**
+   * Define which rule categories and specific rules apply to each field type
+   * @returns {Object}
+   */
+  defineFieldTypeRules() {
+    // Categories that apply to all text-based inputs
+    const textCategories = ['string', 'pattern', 'comparison', 'async'];
+    // Categories for number inputs
+    const numberCategories = ['number', 'comparison', 'async'];
+    // Categories for date/time inputs
+    const dateCategories = ['date', 'comparison', 'async'];
+    // Categories for file inputs
+    const fileCategories = ['file'];
+    // Categories for select/checkbox/radio
+    const selectionCategories = ['selection', 'comparison', 'async'];
+
+    return {
+      // Text-based inputs
+      text: { categories: textCategories, rules: {} },
+      email: { categories: textCategories, rules: { pattern: ['email'] } },
+      password: { categories: textCategories, rules: { pattern: ['password'] } },
+      url: { categories: textCategories, rules: { pattern: ['url'] } },
+      tel: { categories: textCategories, rules: { pattern: ['phone'] } },
+      search: { categories: textCategories, rules: {} },
+      textarea: { categories: textCategories, rules: {} },
+
+      // Number inputs
+      number: { categories: numberCategories, rules: {} },
+      range: { categories: numberCategories, rules: {} },
+
+      // Date/time inputs
+      date: { categories: dateCategories, rules: {} },
+      time: { categories: dateCategories, rules: {} },
+      'datetime-local': { categories: dateCategories, rules: {} },
+      month: { categories: dateCategories, rules: {} },
+      week: { categories: dateCategories, rules: {} },
+
+      // File inputs
+      file: { categories: fileCategories, rules: {} },
+
+      // Selection inputs
+      select: { categories: selectionCategories, rules: {} },
+      'select-one': { categories: selectionCategories, rules: {} },
+      'select-multiple': { categories: selectionCategories, rules: {} },
+      checkbox: { categories: selectionCategories, rules: {} },
+      radio: { categories: selectionCategories, rules: {} },
+
+      // Special inputs
+      color: { categories: ['pattern'], rules: { pattern: ['hexColor'] } },
+      hidden: { categories: [], rules: {} }
+    };
   }
 
   /**
@@ -45,6 +101,11 @@ export class DemoApp {
     this.initAccordion();
     this.initPreviewTabs();
     this.updateFieldParamSelectors();
+    this.updateRuleAccordionState(); // Initialize accordion state (disabled until field selected)
+
+    // Ensure field indicators are updated after all initialization
+    // This handles the case where rules were loaded from storage before indicators were created
+    this.updateFieldIndicators();
   }
 
   /**
@@ -738,6 +799,7 @@ export class DemoApp {
       this.updatePreviewPanel();
       this.updateFieldIndicators();
       this.updateSelectedFieldInfo();
+      this.updateRuleAccordionState();
       return;
     }
 
@@ -753,6 +815,7 @@ export class DemoApp {
     this.updatePreviewPanel();
     this.updateFieldIndicators();
     this.updateSelectedFieldInfo();
+    this.updateRuleAccordionState();
 
     // Open sidebar if on mobile
     if (this.sidebar && window.innerWidth < 768) {
@@ -817,6 +880,156 @@ export class DemoApp {
       }
       this.selectField('');
     });
+  }
+
+  /**
+   * Update rule accordion state based on selected field type
+   * Enables/disables categories and rules based on field compatibility
+   */
+  updateRuleAccordionState() {
+    if (!this.ruleAccordion) return;
+
+    const accordionItems = this.ruleAccordion.querySelectorAll('.fg-accordion-item');
+    const ruleCards = this.ruleAccordion.querySelectorAll('.fg-rule-card');
+
+    // Get applied rules for current field
+    const fieldId = this.currentField?.id || this.currentField?.name;
+    const appliedRules = fieldId ? this.fieldRules.get(fieldId) || [] : [];
+    const appliedRuleNames = new Set(appliedRules.map(r => r.name));
+
+    // Count rules per category
+    const categoryRuleCounts = {};
+    appliedRules.forEach(rule => {
+      // Find which category this rule belongs to
+      const ruleCard = this.ruleAccordion.querySelector(`.fg-rule-card[data-rule="${rule.name}"]`);
+      if (ruleCard) {
+        const category = ruleCard.dataset.category;
+        categoryRuleCounts[category] = (categoryRuleCounts[category] || 0) + 1;
+      }
+    });
+
+    // If no field is selected, disable all
+    if (!this.currentField) {
+      accordionItems.forEach(item => {
+        item.classList.add('fg-accordion-disabled');
+        this.updateAccordionBadge(item, 0);
+      });
+      ruleCards.forEach(card => {
+        card.classList.add('fg-rule-disabled');
+        card.classList.remove('fg-rule-recommended');
+      });
+      return;
+    }
+
+    // Get field type
+    const fieldType = this.getFieldType(this.currentField);
+    const typeConfig = this.fieldTypeRules[fieldType] || { categories: [], rules: {} };
+    const enabledCategories = typeConfig.categories;
+    const highlightedRules = typeConfig.rules; // Rules to highlight as recommended
+
+    // Track if any accordion is open
+    let hasOpenAccordion = false;
+    let firstEnabledItem = null;
+
+    // Update accordion items (categories)
+    accordionItems.forEach(item => {
+      const category = item.dataset.category;
+      const isEnabled = enabledCategories.includes(category);
+      const ruleCount = categoryRuleCounts[category] || 0;
+
+      item.classList.toggle('fg-accordion-disabled', !isEnabled);
+
+      // Update rule count badge
+      this.updateAccordionBadge(item, ruleCount);
+
+      // Track open state and first enabled
+      if (isEnabled) {
+        if (!firstEnabledItem) {
+          firstEnabledItem = item;
+        }
+        if (item.classList.contains('fg-accordion-open')) {
+          hasOpenAccordion = true;
+        }
+      }
+    });
+
+    // Auto-expand first enabled accordion if all are collapsed
+    if (!hasOpenAccordion && firstEnabledItem) {
+      firstEnabledItem.classList.add('fg-accordion-open');
+      const header = firstEnabledItem.querySelector('.fg-accordion-header');
+      if (header) {
+        header.setAttribute('aria-expanded', 'true');
+      }
+    }
+
+    // Update individual rule cards
+    ruleCards.forEach(card => {
+      const category = card.dataset.category;
+      const ruleName = card.dataset.rule;
+      const categoryEnabled = enabledCategories.includes(category);
+
+      // Disable if category is not enabled for this field type
+      card.classList.toggle('fg-rule-disabled', !categoryEnabled);
+
+      // Highlight recommended rules for this field type
+      // Only highlight if the category has specific recommended rules defined
+      const categoryRecommended = highlightedRules[category];
+      const isRecommended = Array.isArray(categoryRecommended) && categoryRecommended.includes(ruleName);
+      card.classList.toggle('fg-rule-recommended', isRecommended && categoryEnabled);
+    });
+  }
+
+  /**
+   * Update accordion header badge with rule count
+   * @param {Element} accordionItem
+   * @param {number} count
+   */
+  updateAccordionBadge(accordionItem, count) {
+    const header = accordionItem.querySelector('.fg-accordion-header');
+    if (!header) return;
+
+    // Find or create badge
+    let badge = header.querySelector('.fg-accordion-badge');
+
+    if (count > 0) {
+      if (!badge) {
+        badge = document.createElement('span');
+        badge.className = 'fg-accordion-badge';
+        // Insert before chevron
+        const chevron = header.querySelector('.fg-accordion-chevron');
+        if (chevron) {
+          header.insertBefore(badge, chevron);
+        } else {
+          header.appendChild(badge);
+        }
+      }
+      badge.textContent = count;
+      badge.title = `${count} rule${count > 1 ? 's' : ''} applied`;
+    } else if (badge) {
+      badge.remove();
+    }
+  }
+
+  /**
+   * Get normalized field type
+   * @param {Element} field
+   * @returns {string}
+   */
+  getFieldType(field) {
+    if (!field) return 'text';
+
+    const tagName = field.tagName.toLowerCase();
+
+    if (tagName === 'textarea') {
+      return 'textarea';
+    }
+
+    if (tagName === 'select') {
+      return field.multiple ? 'select-multiple' : 'select';
+    }
+
+    // For input elements, return the type attribute
+    return field.type || 'text';
   }
 
   /**
@@ -922,6 +1135,17 @@ export class DemoApp {
     const ruleName = ruleCard.dataset.rule;
     const ruleLabel = ruleCard.querySelector('.fg-rule-name')?.textContent;
 
+    // Check if rule is already applied - if so, toggle it off (remove)
+    const fieldId = this.currentField.id || this.currentField.name;
+    const existingRules = this.fieldRules.get(fieldId) || [];
+    const isAlreadyApplied = existingRules.some(r => r.name === ruleName);
+
+    if (isAlreadyApplied) {
+      // Remove the rule (toggle off)
+      this.removeAppliedRule(ruleName);
+      return;
+    }
+
     // Get parameters
     const params = {};
     const paramInputs = ruleCard.querySelectorAll('.fg-param-input, .fg-param-checkbox');
@@ -975,6 +1199,7 @@ export class DemoApp {
     this.updatePreviewPanel();
     this.updateFieldIndicators();
     this.updateSelectedFieldInfo();
+    this.updateRuleAccordionState();
 
     // Persist to localStorage
     this.saveRulesToStorage();
@@ -1002,6 +1227,7 @@ export class DemoApp {
         this.updatePreviewPanel();
         this.updateFieldIndicators();
         this.updateSelectedFieldInfo();
+        this.updateRuleAccordionState();
 
         // Persist to localStorage
         this.saveRulesToStorage();
@@ -1184,8 +1410,12 @@ export class DemoApp {
         this.applyRulesToFormGuardian();
       }
 
-      // Update UI indicators
-      this.updateFieldIndicators();
+      // Update UI indicators - use requestAnimationFrame to ensure DOM is ready
+      // This is important when loadRulesFromStorage is called asynchronously
+      requestAnimationFrame(() => {
+        this.updateFieldIndicators();
+        this.updateRuleAccordionState();
+      });
 
       // If there are saved rules, show a notification
       const totalRules = Array.from(this.fieldRules.values()).reduce((sum, r) => sum + r.length, 0);

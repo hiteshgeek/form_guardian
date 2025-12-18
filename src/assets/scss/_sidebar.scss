@@ -352,6 +352,37 @@ body.fg-sidebar-visible .fg-demo-main {
   transition: transform 0.2s;
 }
 
+.fg-accordion-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  margin-left: auto;
+  margin-right: 0.5rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: white;
+  background-color: var(--fg-color-success);
+  border-radius: 10px;
+  animation: fg-badge-pop 0.2s ease-out;
+}
+
+@keyframes fg-badge-pop {
+  0% {
+    transform: scale(0.5);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
 .fg-accordion-body {
   display: none;
   padding: 0.75rem;
@@ -365,6 +396,25 @@ body.fg-sidebar-visible .fg-demo-main {
 
   .fg-accordion-body {
     display: block;
+  }
+}
+
+// Disabled accordion state (for field type filtering)
+.fg-accordion-item.fg-accordion-disabled {
+  opacity: 0.4;
+  pointer-events: none;
+
+  .fg-accordion-header {
+    cursor: not-allowed;
+    background-color: var(--fg-bg-secondary);
+
+    &:hover {
+      background-color: var(--fg-bg-secondary);
+    }
+  }
+
+  .fg-accordion-icon {
+    color: var(--fg-text-secondary);
   }
 }
 
@@ -401,6 +451,33 @@ body.fg-sidebar-visible .fg-demo-main {
       &:hover {
         background-color: var(--fg-color-success-hover, #157347);
         box-shadow: 0 2px 8px rgba(25, 135, 84, 0.4);
+      }
+    }
+  }
+
+  // Disabled rule state (not applicable for current field type)
+  &.fg-rule-disabled {
+    opacity: 0.35;
+    pointer-events: none;
+
+    .fg-rule-add-btn {
+      background-color: var(--fg-text-secondary);
+      cursor: not-allowed;
+    }
+  }
+
+  // Recommended rule state (suggested for current field type)
+  &.fg-rule-recommended {
+    border-color: var(--fg-color-primary);
+    background-color: var(--fg-color-primary-light);
+
+    .fg-rule-name {
+      color: var(--fg-color-primary);
+
+      &::after {
+        content: ' ★';
+        font-size: 0.7rem;
+        vertical-align: super;
       }
     }
   }
@@ -547,16 +624,11 @@ body.fg-sidebar-visible .fg-demo-main {
   border: 1px solid var(--fg-border-color);
   border-top: none;
   border-radius: 0 0 var(--fg-border-radius-sm) var(--fg-border-radius-sm);
-  min-height: 120px;
-  max-height: 200px;
-  overflow: hidden;
+  min-height: 80px;
 }
 
 .fg-preview-pane {
   display: none;
-  height: 100%;
-  max-height: 200px;
-  overflow: auto;
   position: relative;
 
   &.active {
@@ -623,8 +695,6 @@ body.fg-sidebar-visible .fg-demo-main {
   color: var(--fg-text-primary);
   white-space: pre-wrap;
   word-break: break-all;
-  overflow: auto;
-  max-height: 200px;
   border-radius: 0;
 
   code {
