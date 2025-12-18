@@ -100,8 +100,22 @@ export class Sidebar {
     const diff = clientX - this.startX;
     const newWidth = Math.min(this.maxWidth, Math.max(this.minWidth, this.startWidth + diff));
 
-    this.element.style.width = `${newWidth}px`;
-    this.element.style.flexBasis = `${newWidth}px`;
+    this.setWidth(newWidth);
+  }
+
+  /**
+   * Set sidebar width and update CSS variable for main content
+   * @param {number} width
+   */
+  setWidth(width) {
+    const widthPx = `${width}px`;
+
+    // Update sidebar element
+    this.element.style.width = widthPx;
+    this.element.style.flexBasis = widthPx;
+
+    // Update CSS variable so main content margin adjusts
+    document.documentElement.style.setProperty('--fg-demo-sidebar-width', widthPx);
   }
 
   /**
@@ -136,8 +150,7 @@ export class Sidebar {
       if (saved) {
         const width = parseInt(saved, 10);
         if (width >= this.minWidth && width <= this.maxWidth) {
-          this.element.style.width = `${width}px`;
-          this.element.style.flexBasis = `${width}px`;
+          this.setWidth(width);
         }
       }
     } catch (e) {

@@ -23,6 +23,11 @@ export class DemoApp {
     this.fieldRules = new Map(); // Store rules per field
     this.storageKey = 'fg-demo-rules'; // localStorage key for persisting rules
 
+    // HTML output quote style preference
+    // 'single' = All attributes use single quotes, JSON uses double: <input type='text' data-fg-rules='{"required":true}'>
+    // 'double' = All attributes use double quotes, JSON uses single: <input type="text" data-fg-rules="{'required':true}">
+    this.htmlQuoteStyle = options.htmlQuoteStyle || 'single';
+
     // Preview panel elements
     this.previewPanel = document.getElementById('preview-panel');
     this.previewTabs = this.previewPanel?.querySelectorAll('.fg-preview-tab');
@@ -244,7 +249,8 @@ export class DemoApp {
       showErrorContainer: true,
       errorContainerPosition: 'right-bottom',
       scrollToError: true,
-      focusOnError: true
+      focusOnError: true,
+      showLabelTooltips: true
     });
 
     // Store reference globally for debugging
@@ -435,6 +441,46 @@ export class DemoApp {
 
     // Initialize copy buttons
     this.initCopyButtons();
+
+    // Initialize HTML quote style selector
+    this.initHtmlQuoteStyleSelector();
+  }
+
+  /**
+   * Initialize HTML quote style selector
+   */
+  initHtmlQuoteStyleSelector() {
+    const selector = document.getElementById('html-quote-style');
+    if (!selector) return;
+
+    // Migrate from old localStorage key if present
+    const oldKey = 'fg-json-quote-style';
+    const oldValue = localStorage.getItem(oldKey);
+    if (oldValue) {
+      // Map old values to new values
+      let newValue = 'single';
+      if (oldValue === 'escaped-quotes' || oldValue === 'double') {
+        newValue = 'double';
+      }
+      localStorage.setItem('fg-html-quote-style', newValue);
+      localStorage.removeItem(oldKey);
+    }
+
+    // Load saved preference from localStorage
+    const savedStyle = localStorage.getItem('fg-html-quote-style');
+    if (savedStyle && (savedStyle === 'single' || savedStyle === 'double')) {
+      this.htmlQuoteStyle = savedStyle;
+      selector.value = savedStyle;
+    } else {
+      // Ensure default is applied to selector
+      selector.value = this.htmlQuoteStyle;
+    }
+
+    selector.addEventListener('change', (e) => {
+      this.setHtmlQuoteStyle(e.target.value);
+      // Save preference to localStorage
+      localStorage.setItem('fg-html-quote-style', e.target.value);
+    });
   }
 
   /**
@@ -543,6 +589,19 @@ export class DemoApp {
       const clone = formGroup.cloneNode(true);
       clone.classList.add('fg-preview-clone');
 
+      // Remove demo-specific elements (field indicators)
+      clone.querySelectorAll('.fg-field-indicator').forEach(el => {
+        el.remove();
+      });
+
+      // Remove inline styles added for demo
+      if (clone.style.position === 'relative') {
+        clone.style.removeProperty('position');
+        if (!clone.getAttribute('style')?.trim()) {
+          clone.removeAttribute('style');
+        }
+      }
+
       // Remove any validation states from the clone
       clone.querySelectorAll('.is-valid, .is-invalid, .has-error, .has-success').forEach(el => {
         el.classList.remove('is-valid', 'is-invalid', 'has-error', 'has-success');
@@ -637,6 +696,25 @@ export class DemoApp {
     // Clone and clean up the HTML
     const clone = element.cloneNode(true);
 
+    // Remove demo-specific elements (field indicators)
+    clone.querySelectorAll('.fg-field-indicator').forEach(el => {
+      el.remove();
+    });
+
+    // Remove label tooltips (they're added dynamically by the library)
+    clone.querySelectorAll('.fg-label-tooltip').forEach(el => {
+      el.remove();
+    });
+
+    // Remove inline styles added for demo (position: relative for indicator positioning)
+    if (clone.style.position === 'relative') {
+      clone.style.removeProperty('position');
+      // If style attribute is now empty, remove it
+      if (!clone.getAttribute('style')?.trim()) {
+        clone.removeAttribute('style');
+      }
+    }
+
     // Remove validation classes
     clone.querySelectorAll('.is-valid, .is-invalid, .has-error, .has-success').forEach(el => {
       el.classList.remove('is-valid', 'is-invalid', 'has-error', 'has-success');
@@ -709,6 +787,33 @@ export class DemoApp {
   highlightCode(codeElement) {
     if (typeof Prism !== 'undefined' && codeElement) {
       Prism.highlightElement(codeElement);
+
+      // After Prism highlighting, add custom highlight for data-fg-rules attribute
+      this.highlightFgRulesAttribute(codeElement);
+    }
+  }
+
+  /**
+   * Add custom highlight to data-fg-rules attribute in code element
+   * @param {Element} codeElement
+   */
+  highlightFgRulesAttribute(codeElement) {
+    // Find the line containing data-fg-rules and wrap it
+    // Split by newlines to process line by line
+    const html = codeElement.innerHTML;
+    const lines = html.split('\n');
+
+    const highlighted = lines.map(line => {
+      // Check if this line contains data-fg-rules (accounting for Prism span tags)
+      if (line.includes('data-fg-rules')) {
+        // Wrap the entire line content in a highlight span
+        return `<span class="fg-highlight-attr">${line}</span>`;
+      }
+      return line;
+    }).join('\n');
+
+    if (highlighted !== html) {
+      codeElement.innerHTML = highlighted;
     }
   }
 
@@ -729,8 +834,8 @@ export class DemoApp {
    * @returns {string}
    */
   formatHtml(html) {
-    // Decode HTML entities first (e.g., &quot; -> ")
-    html = this.decodeHtmlEntities(html);
+    // Do NOT decode HTML entities before tokenizing - it breaks attribute parsing
+    // e.g., data-fg-rules="{"required":true}" has inner quotes that break tokenization
 
     // Simple HTML formatter
     let formatted = '';
@@ -744,27 +849,216 @@ export class DemoApp {
       if (token.startsWith('</')) {
         // Closing tag - decrease indent first
         indent = Math.max(0, indent - indentSize);
-        formatted += ' '.repeat(indent) + token + '\n';
+        formatted += ' '.repeat(indent) + this.decodeHtmlEntities(token) + '\n';
       } else if (token.startsWith('<') && !token.endsWith('/>') && !token.includes('</')) {
-        // Opening tag
-        formatted += ' '.repeat(indent) + token + '\n';
+        // Opening tag - format with attributes on separate lines
+        formatted += ' '.repeat(indent) + this.formatTagWithAttributes(token, indent) + '\n';
         // Self-closing tags or void elements don't increase indent
         if (!token.match(/<(input|img|br|hr|meta|link)/i)) {
           indent += indentSize;
         }
       } else if (token.startsWith('<')) {
-        // Self-closing or void element
-        formatted += ' '.repeat(indent) + token + '\n';
+        // Self-closing or void element - format with attributes on separate lines
+        formatted += ' '.repeat(indent) + this.formatTagWithAttributes(token, indent) + '\n';
       } else {
         // Text content
         const trimmed = token.trim();
         if (trimmed) {
-          formatted += ' '.repeat(indent) + trimmed + '\n';
+          formatted += ' '.repeat(indent) + this.decodeHtmlEntities(trimmed) + '\n';
         }
       }
     });
 
     return formatted.trim();
+  }
+
+  /**
+   * Format a tag with attributes on separate lines for readability
+   * @param {string} tag - The HTML tag string
+   * @param {number} indent - Current indentation level
+   * @returns {string}
+   */
+  formatTagWithAttributes(tag, indent) {
+    // Match tag name and attributes
+    const match = tag.match(/^<(\/?[\w-]+)([\s\S]*?)(\/?)>$/);
+    if (!match) return this.decodeTagWithQuoteHandling(tag);
+
+    const tagName = match[1];
+    const attributesStr = match[2];
+    const selfClosing = match[3];
+
+    // If no attributes or very short, return as-is (with proper quote handling)
+    if (!attributesStr.trim() || tag.length < 60) {
+      return this.decodeTagWithQuoteHandling(tag);
+    }
+
+    // Parse attributes manually to handle complex values like JSON
+    // parseAttributes will decode entities in values and use single quotes for JSON
+    const attributes = this.parseAttributes(attributesStr);
+
+    // If only 1-2 attributes, keep on one line
+    if (attributes.length <= 2) {
+      return this.decodeTagWithQuoteHandling(tag);
+    }
+
+    // Format with each attribute on its own line
+    const attrIndent = ' '.repeat(indent + 2);
+    const formattedAttrs = attributes.map(attr => attrIndent + attr).join('\n');
+
+    return `<${tagName}\n${formattedAttrs}${selfClosing ? ' /' : ''}>`;
+  }
+
+  /**
+   * Decode HTML tag and format all attributes with consistent quote style
+   * @param {string} tag - The HTML tag string
+   * @returns {string}
+   */
+  decodeTagWithQuoteHandling(tag) {
+    // Format all attributes with consistent quote style
+    // Match attributes with values
+    return tag.replace(
+      /(\s)([\w-]+)="([^"]*)"/g,
+      (match, space, name, value) => {
+        const decodedValue = this.decodeHtmlEntities(value);
+        return `${space}${this.formatAttribute(name, decodedValue)}`;
+      }
+    );
+  }
+
+  /**
+   * Format an attribute with consistent quote style
+   * @param {string} name - Attribute name
+   * @param {string} value - Attribute value
+   * @returns {string} Formatted attribute string
+   */
+  formatAttribute(name, value) {
+    if (this.htmlQuoteStyle === 'double') {
+      // Use double quotes for outer attribute wrapper
+      // For JSON-like values (data-fg-rules), convert inner double quotes to single quotes
+      // This avoids &quot; entities and produces cleaner output: {"key":true} -> {'key':true}
+      let processedValue = value;
+      if (this.isJsonLikeValue(value)) {
+        // Convert double quotes in JSON to single quotes
+        processedValue = this.convertJsonQuotesToSingle(value);
+      } else {
+        // For non-JSON values, escape any double quotes
+        processedValue = value.replace(/"/g, '&quot;');
+      }
+      return `${name}="${processedValue}"`;
+    }
+    // Default: single quotes for outer attribute wrapper
+    // JSON can use double quotes inside: data-fg-rules='{"key":true}'
+    // Escape any single quotes in non-JSON values
+    const escapedValue = value.replace(/'/g, '&#39;');
+    return `${name}='${escapedValue}'`;
+  }
+
+  /**
+   * Check if a value looks like JSON (starts with { or [)
+   * @param {string} value
+   * @returns {boolean}
+   */
+  isJsonLikeValue(value) {
+    const trimmed = value.trim();
+    return (trimmed.startsWith('{') && trimmed.endsWith('}')) ||
+           (trimmed.startsWith('[') && trimmed.endsWith(']'));
+  }
+
+  /**
+   * Convert double quotes in JSON-like string to single quotes
+   * Handles JSON keys and string values
+   * @param {string} json
+   * @returns {string}
+   */
+  convertJsonQuotesToSingle(json) {
+    // Replace double quotes with single quotes for JSON keys and string values
+    // This is a simple replacement that works for our use case
+    return json.replace(/"/g, "'");
+  }
+
+  /**
+   * Set the HTML quote style for output
+   * @param {'single'|'double'} style
+   */
+  setHtmlQuoteStyle(style) {
+    if (style === 'single' || style === 'double') {
+      this.htmlQuoteStyle = style;
+      // Re-render preview if field is selected
+      if (this.currentField) {
+        this.updatePreviewPanel();
+      }
+    }
+  }
+
+  /**
+   * Parse HTML attributes from a string, handling complex values like JSON
+   * Decodes HTML entities in attribute values
+   * @param {string} str - The attributes string
+   * @returns {string[]} Array of formatted attribute strings
+   */
+  parseAttributes(str) {
+    const attributes = [];
+    let i = 0;
+    const len = str.length;
+
+    while (i < len) {
+      // Skip whitespace
+      while (i < len && /\s/.test(str[i])) i++;
+      if (i >= len) break;
+
+      // Read attribute name
+      let name = '';
+      while (i < len && /[\w-]/.test(str[i])) {
+        name += str[i++];
+      }
+      if (!name) {
+        i++; // Skip unknown character
+        continue;
+      }
+
+      // Skip whitespace
+      while (i < len && /\s/.test(str[i])) i++;
+
+      // Check for = sign
+      if (str[i] === '=') {
+        i++; // Skip =
+
+        // Skip whitespace
+        while (i < len && /\s/.test(str[i])) i++;
+
+        // Read value
+        let value = '';
+        const quote = str[i];
+
+        if (quote === '"' || quote === "'") {
+          i++; // Skip opening quote
+
+          // Read until matching closing quote
+          while (i < len && str[i] !== quote) {
+            value += str[i++];
+          }
+          i++; // Skip closing quote
+
+          // Decode HTML entities in the value (e.g., &quot; -> ")
+          const decodedValue = this.decodeHtmlEntities(value);
+
+          // Format attribute with consistent quote style
+          attributes.push(this.formatAttribute(name, decodedValue));
+        } else {
+          // Unquoted value - read until whitespace
+          while (i < len && !/\s/.test(str[i])) {
+            value += str[i++];
+          }
+          const decodedValue = this.decodeHtmlEntities(value);
+          attributes.push(this.formatAttribute(name, decodedValue));
+        }
+      } else {
+        // Boolean attribute (no value)
+        attributes.push(name);
+      }
+    }
+
+    return attributes;
   }
 
   /**

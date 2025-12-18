@@ -64,21 +64,43 @@ require_once __DIR__ . '/includes/functions.php';
         }
 
         .btn-demo {
+            display: inline-flex;
+            align-items: center;
             padding: 0.75rem 2rem;
             font-size: 1.1rem;
             font-weight: 600;
             border-radius: 50px;
             background: white;
             color: var(--fg-gradient-start);
-            border: none;
+            border: 2px solid white;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-            transition: transform 0.2s, box-shadow 0.2s;
+            transition: all 0.3s ease;
+            text-decoration: none;
         }
 
         .btn-demo:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+            background: rgba(255, 255, 255, 0.95);
             color: var(--fg-gradient-end);
+        }
+
+        .btn-demo:active {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Outline variant for Setup Guide button */
+        .btn-demo-outline {
+            background: transparent;
+            border: 2px solid rgba(255, 255, 255, 0.8);
+            color: white;
+        }
+
+        .btn-demo-outline:hover {
+            background: white;
+            border-color: white;
+            color: var(--fg-gradient-start);
         }
 
         .features {
@@ -235,6 +257,16 @@ require_once __DIR__ . '/includes/functions.php';
                     <polygon points="5 3 19 12 5 21 5 3"/>
                 </svg>
                 View Demo
+            </a>
+            <a href="setup/" class="btn btn-demo btn-demo-outline" style="margin-left: 1rem;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 8px; vertical-align: -4px;">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                    <line x1="16" y1="13" x2="8" y2="13"/>
+                    <line x1="16" y1="17" x2="8" y2="17"/>
+                    <polyline points="10 9 9 9 8 9"/>
+                </svg>
+                Setup Guide
             </a>
         </div>
     </section>
@@ -462,7 +494,8 @@ require_once __DIR__ . '/includes/functions.php';
             <p class="mb-1">FormGuardian - Form Validation Library</p>
             <p class="mb-0 opacity-75">
                 <a href="demo/">Demo</a> &bull;
-                <a href="https://github.com" target="_blank">GitHub</a>
+                <a href="setup/">Setup Guide</a> &bull;
+                <a href="https://github.com/hiteshgeek/form_guardian" target="_blank">GitHub</a>
             </p>
         </div>
     </footer>

@@ -9,6 +9,7 @@ import { Validator } from './Validator.js';
 import { FieldManager } from './FieldManager.js';
 import { getAdapter } from '../adapters/index.js';
 import { ErrorContainer } from '../components/ErrorContainer.js';
+import { LabelTooltip } from '../components/LabelTooltip.js';
 import { getAllRules } from '../rules/index.js';
 
 /**
@@ -23,6 +24,8 @@ const DEFAULTS = {
   showErrorContainer: true,      // Show floating error container
   errorContainerPosition: 'left-bottom', // Position of error container
   errorContainerHeight: 200,     // Max height of error container
+  showLabelTooltips: false,      // Show validation rules tooltip on field labels
+  labelTooltipTitle: 'Validation Rules', // Title for label tooltips
   scrollToError: true,           // Scroll to first error on submit
   focusOnError: true,            // Focus first error field on submit
   stopOnFirstError: false,       // Stop validation on first error
@@ -72,6 +75,7 @@ export class FormGuardian {
     this.fieldManager = new FieldManager(this);
     this.adapter = null;
     this.errorContainer = null;
+    this.labelTooltip = null;
 
     // State
     this.isInitialized = false;
@@ -105,6 +109,11 @@ export class FormGuardian {
     // Initialize error container if enabled
     if (this.options.showErrorContainer) {
       this._initErrorContainer();
+    }
+
+    // Initialize label tooltips if enabled
+    if (this.options.showLabelTooltips) {
+      this._initLabelTooltips();
     }
 
     // Bind form events
@@ -179,6 +188,27 @@ export class FormGuardian {
       maxHeight: this.options.errorContainerHeight,
       onErrorClick: (fieldId) => this._handleErrorClick(fieldId),
     });
+  }
+
+  /**
+   * Initialize label tooltips
+   * @private
+   */
+  _initLabelTooltips() {
+    this.labelTooltip = new LabelTooltip(this, {
+      tooltipTitle: this.options.labelTooltipTitle,
+      formGroupSelector: this.options.formGroupSelector || '.form-group, .mb-3, .mb-4',
+    });
+  }
+
+  /**
+   * Update label tooltips to reflect current rules
+   * Called after adding/removing fields or rules
+   */
+  updateLabelTooltips() {
+    if (this.labelTooltip) {
+      this.labelTooltip.update();
+    }
   }
 
   /**
@@ -389,6 +419,10 @@ export class FormGuardian {
     }
 
     this.fieldManager.addField(field, rules, messages);
+
+    // Update label tooltips if enabled
+    this.updateLabelTooltips();
+
     return this;
   }
 
@@ -405,6 +439,9 @@ export class FormGuardian {
 
       // Clear any errors
       this._clearFieldError(fieldId, field);
+
+      // Update label tooltips if enabled
+      this.updateLabelTooltips();
     }
     return this;
   }
@@ -430,6 +467,8 @@ export class FormGuardian {
     const field = getElement(selector, this.form);
     if (field) {
       this.fieldManager.addRule(field, ruleName, ruleConfig);
+      // Update label tooltips if enabled
+      this.updateLabelTooltips();
     }
     return this;
   }
@@ -444,6 +483,8 @@ export class FormGuardian {
     const field = getElement(selector, this.form);
     if (field) {
       this.fieldManager.removeRule(field, ruleName);
+      // Update label tooltips if enabled
+      this.updateLabelTooltips();
     }
     return this;
   }
@@ -672,6 +713,11 @@ export class FormGuardian {
       this.errorContainer.destroy();
     }
 
+    // Destroy label tooltips
+    if (this.labelTooltip) {
+      this.labelTooltip.destroy();
+    }
+
     // Remove from instances
     FormGuardian.instances.delete(this.form);
 
@@ -681,6 +727,7 @@ export class FormGuardian {
     this.validator = null;
     this.fieldManager = null;
     this.errorContainer = null;
+    this.labelTooltip = null;
   }
 
   // ==========================================
@@ -722,6 +769,9 @@ export class FormGuardian {
     }
     if (form.dataset.fgErrorContainer !== undefined) {
       dataOptions.showErrorContainer = form.dataset.fgErrorContainer !== 'false';
+    }
+    if (form.dataset.fgLabelTooltips !== undefined) {
+      dataOptions.showLabelTooltips = form.dataset.fgLabelTooltips !== 'false';
     }
 
     return new FormGuardian(form, { ...dataOptions, ...options });

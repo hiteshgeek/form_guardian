@@ -42,6 +42,9 @@ $bootstrapCDN = [
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FormGuardian Demo - Form Validation Library</title>
 
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+
     <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="<?= $bootstrapCDN[$bootstrapVersion]['css'] ?>">
 
@@ -59,13 +62,13 @@ $bootstrapCDN = [
     <!-- Header -->
     <header class="fg-demo-header">
         <div class="fg-demo-header-inner">
-            <div class="fg-demo-logo">
+            <a href="../" class="fg-demo-logo" title="Home">
                 <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
                     <path d="M9 12l2 2 4-4"/>
                 </svg>
                 <span>FormGuardian</span>
-            </div>
+            </a>
 
             <div class="fg-demo-controls">
                 <!-- Bootstrap Version Switcher -->
@@ -175,12 +178,20 @@ $bootstrapCDN = [
                             <pre class="fg-code-block"><code class="language-javascript" id="preview-js-config">// Select a field to see JS configuration</code></pre>
                         </div>
                         <div class="fg-preview-pane" id="preview-pane-html-dom">
-                            <button type="button" class="fg-copy-btn" data-copy-target="preview-html-dom" title="Copy to clipboard">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                                </svg>
-                            </button>
+                            <div class="fg-preview-toolbar">
+                                <label class="fg-quote-style-toggle" title="HTML attribute quote style">
+                                    <select id="html-quote-style" class="fg-quote-style-select">
+                                        <option value="single">Single: '...' (JSON uses ")</option>
+                                        <option value="double">Double: "..." (JSON uses ')</option>
+                                    </select>
+                                </label>
+                                <button type="button" class="fg-copy-btn" data-copy-target="preview-html-dom" title="Copy to clipboard">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                    </svg>
+                                </button>
+                            </div>
                             <pre class="fg-code-block"><code class="language-markup" id="preview-html-dom">&lt;!-- Select a field to see HTML --&gt;</code></pre>
                         </div>
                     </div>

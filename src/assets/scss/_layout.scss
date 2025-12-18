@@ -194,6 +194,13 @@ body {
   }
 }
 
+// Form label styles for tooltip alignment
+.form-label,
+.control-label {
+  display: flex;
+  align-items: center;
+}
+
 // Field Selection Indicators
 .fg-field-indicator {
   position: absolute;
