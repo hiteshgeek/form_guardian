@@ -97,7 +97,10 @@ const RULE_LABELS = {
   unique: 'Must Be Unique',
   exists: 'Must Exist',
   custom: 'Custom Rule',
-  callback: 'Callback'
+  callback: 'Callback',
+  noConsecutive: 'No Consecutive',
+  maxConsecutive: 'Max Consecutive',
+  noRepeatedChars: 'No Repeated Chars'
 };
 
 export class LabelTooltip {

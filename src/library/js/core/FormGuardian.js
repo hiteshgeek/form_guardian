@@ -3,7 +3,7 @@
  * A vanilla JavaScript form validation library supporting Bootstrap 3, 4, and 5
  */
 
-import { $, getElement, getFieldValue, getFieldLabel, isEmptyValue, scrollIntoView, focus } from '../utils/dom.js';
+import { $, getElement, getFieldValue, isEmptyValue, scrollIntoView, focus } from '../utils/dom.js';
 import { debounce } from '../utils/debounce.js';
 import { Validator } from './Validator.js';
 import { FieldManager } from './FieldManager.js';
@@ -602,7 +602,7 @@ export class FormGuardian {
     this.adapter.showError(field, message);
 
     if (this.errorContainer) {
-      const label = getFieldLabel(field);
+      const label = this.fieldManager.getLabel(field);
       this.errorContainer.addError(fieldId, label, message);
     }
   }

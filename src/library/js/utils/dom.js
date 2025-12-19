@@ -263,7 +263,7 @@ export function isEmptyValue(value) {
 }
 
 /**
- * Get field label text
+ * Get field label text (excludes tooltip content)
  * @param {Element} field
  * @returns {string}
  */
@@ -274,16 +274,24 @@ export function getFieldLabel(field) {
   const id = field.id;
   if (id) {
     const label = document.querySelector(`label[for="${id}"]`);
-    if (label) return label.textContent.trim();
+    if (label) {
+      // Clone and remove tooltip elements to get just label text
+      const clone = label.cloneNode(true);
+      const tooltips = clone.querySelectorAll('.fg-label-tooltip');
+      tooltips.forEach(t => t.remove());
+      return clone.textContent.trim();
+    }
   }
 
   // Check for parent label
   const parentLabel = closest(field, 'label');
   if (parentLabel) {
-    // Clone and remove input to get just label text
+    // Clone and remove input and tooltip to get just label text
     const clone = parentLabel.cloneNode(true);
     const inputs = clone.querySelectorAll('input, select, textarea');
     inputs.forEach(inp => inp.remove());
+    const tooltips = clone.querySelectorAll('.fg-label-tooltip');
+    tooltips.forEach(t => t.remove());
     return clone.textContent.trim();
   }
 

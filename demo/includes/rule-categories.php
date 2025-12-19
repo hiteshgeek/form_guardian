@@ -31,6 +31,16 @@ $ruleCategories = [
             'wordCount' => ['label' => 'Word Count', 'params' => [
                 ['name' => 'min', 'type' => 'number', 'label' => 'Min Words', 'default' => 1],
                 ['name' => 'max', 'type' => 'number', 'label' => 'Max Words', 'default' => 100]
+            ]],
+            'noConsecutive' => ['label' => 'No Consecutive', 'params' => [
+                ['name' => 'chars', 'type' => 'charlist', 'label' => 'Characters', 'default' => ' ', 'placeholder' => 'e.g., space, hyphen']
+            ]],
+            'maxConsecutive' => ['label' => 'Max Consecutive', 'params' => [
+                ['name' => 'chars', 'type' => 'charlist', 'label' => 'Characters', 'default' => ' ', 'placeholder' => 'e.g., space, hyphen'],
+                ['name' => 'max', 'type' => 'number', 'label' => 'Max Count', 'default' => 2]
+            ]],
+            'noRepeatedChars' => ['label' => 'No Repeated Chars', 'params' => [
+                ['name' => 'except', 'type' => 'charlist', 'label' => 'Exceptions', 'default' => '', 'placeholder' => 'Allow these to repeat']
             ]]
         ]
     ],
@@ -181,7 +191,7 @@ $ruleCategories = [
                     <span class="fg-rule-name"><?= $rule['label'] ?></span>
                     <button type="button" class="fg-rule-add-btn" title="Add rule">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <line x1="12" y1="5" x2="12" y2="19"/>
+                            <line class="fg-icon-vertical" x1="12" y1="5" x2="12" y2="19"/>
                             <line x1="5" y1="12" x2="19" y2="12"/>
                         </svg>
                     </button>
@@ -203,6 +213,11 @@ $ruleCategories = [
                         <select class="fg-param-input fg-field-param" data-param="<?= $param['name'] ?>">
                             <option value="">-- Select field --</option>
                         </select>
+                        <?php elseif ($param['type'] === 'charlist'): ?>
+                        <div class="fg-charlist-input-wrapper">
+                            <input type="text" class="fg-param-input fg-charlist-input" data-param="<?= $param['name'] ?>" value="<?= htmlspecialchars($param['default']) ?>" placeholder="<?= htmlspecialchars($param['placeholder'] ?? '') ?>">
+                            <span class="fg-charlist-preview" title="Character preview"></span>
+                        </div>
                         <?php else: ?>
                         <input type="<?= $param['type'] ?>" class="fg-param-input" data-param="<?= $param['name'] ?>" value="<?= htmlspecialchars($param['default']) ?>">
                         <?php endif; ?>

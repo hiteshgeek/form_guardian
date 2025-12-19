@@ -448,9 +448,14 @@ body.fg-sidebar-visible .fg-demo-main {
     .fg-rule-add-btn {
       background-color: var(--fg-color-success);
 
+      // Hide vertical line to turn + into -
+      .fg-icon-vertical {
+        display: none;
+      }
+
       &:hover {
-        background-color: var(--fg-color-success-hover, #157347);
-        box-shadow: 0 2px 8px rgba(25, 135, 84, 0.4);
+        background-color: var(--fg-color-danger, #dc3545);
+        box-shadow: 0 2px 8px rgba(220, 53, 69, 0.4);
       }
     }
   }
@@ -580,6 +585,66 @@ body.fg-sidebar-visible .fg-demo-main {
   width: 16px;
   height: 16px;
   cursor: pointer;
+}
+
+// Character list input (for noConsecutive rules)
+.fg-charlist-input-wrapper {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.fg-charlist-input {
+  flex: 1;
+  font-family: monospace;
+}
+
+.fg-charlist-preview {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.7rem;
+  font-family: monospace;
+  background-color: var(--fg-bg-tertiary, rgba(0, 0, 0, 0.05));
+  border-radius: var(--fg-border-radius-sm);
+  color: var(--fg-text-secondary);
+  white-space: nowrap;
+  min-height: 24px;
+
+  &:empty::before {
+    content: 'No chars';
+    opacity: 0.5;
+  }
+
+  [data-theme="dark"] & {
+    background-color: rgba(255, 255, 255, 0.1);
+  }
+}
+
+// Character badge for displaying invisible characters
+.fg-char-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.125rem 0.375rem;
+  font-size: 0.65rem;
+  font-weight: 500;
+  background-color: var(--fg-color-primary);
+  color: white;
+  border-radius: 3px;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+
+  &.fg-char-space {
+    background-color: #6c757d;
+  }
+
+  &.fg-char-special {
+    background-color: #17a2b8;
+  }
 }
 
 // Preview Panel

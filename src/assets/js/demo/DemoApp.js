@@ -105,6 +105,7 @@ export class DemoApp {
     this.bindEvents();
     this.initAccordion();
     this.initPreviewTabs();
+    this.initCharlistInputs();
     this.updateFieldParamSelectors();
     this.updateRuleAccordionState(); // Initialize accordion state (disabled until field selected)
 
@@ -212,6 +213,94 @@ export class DemoApp {
   }
 
   /**
+   * Character display names for the charlist preview
+   */
+  static CHAR_NAMES = {
+    ' ': 'SPC',
+    '\t': 'TAB',
+    '\n': 'NL',
+    '-': '-',
+    '_': '_',
+    '.': '.',
+    ',': ',',
+    '!': '!',
+    '?': '?',
+    '@': '@',
+    '#': '#',
+    '$': '$',
+    '%': '%',
+    '&': '&',
+    '*': '*',
+    '/': '/',
+    '\\': '\\',
+    ':': ':',
+    ';': ';',
+    "'": "'",
+    '"': '"'
+  };
+
+  /**
+   * Get display name for a character in charlist preview
+   * @param {string} char
+   * @returns {string}
+   */
+  getCharDisplayBadge(char) {
+    const name = DemoApp.CHAR_NAMES[char] || char;
+    const isSpace = char === ' ' || char === '\t' || char === '\n';
+    const isSpecial = /[^a-zA-Z0-9]/.test(char);
+
+    let className = 'fg-char-badge';
+    if (isSpace) className += ' fg-char-space';
+    else if (isSpecial) className += ' fg-char-special';
+
+    return `<span class="${className}">${this.escapeHtml(name)}</span>`;
+  }
+
+  /**
+   * Escape HTML entities
+   * @param {string} str
+   * @returns {string}
+   */
+  escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  /**
+   * Initialize charlist inputs with preview functionality
+   */
+  initCharlistInputs() {
+    const charlistInputs = document.querySelectorAll('.fg-charlist-input');
+
+    charlistInputs.forEach(input => {
+      const wrapper = input.closest('.fg-charlist-input-wrapper');
+      const preview = wrapper?.querySelector('.fg-charlist-preview');
+
+      if (!preview) return;
+
+      // Update preview on input
+      const updatePreview = () => {
+        const value = input.value;
+        if (!value) {
+          preview.innerHTML = '';
+          return;
+        }
+
+        // Create badges for each unique character
+        const chars = [...new Set(value.split(''))];
+        preview.innerHTML = chars.map(c => this.getCharDisplayBadge(c)).join('');
+      };
+
+      // Initial update
+      updatePreview();
+
+      // Update on input
+      input.addEventListener('input', updatePreview);
+    });
+  }
+
+  /**
    * Initialize FormGuardian instance
    */
   initFormGuardian() {
@@ -312,29 +401,37 @@ export class DemoApp {
   }
 
   /**
-   * Get label for a field
+   * Get label for a field (excludes tooltip content)
    * @param {Element} field
    * @returns {string}
    */
   getFieldLabel(field) {
+    // Helper to get clean label text (excluding tooltip)
+    const getCleanLabelText = (label) => {
+      const clone = label.cloneNode(true);
+      // Remove tooltip elements to get just label text
+      clone.querySelectorAll('.fg-label-tooltip').forEach(t => t.remove());
+      return clone.textContent.trim();
+    };
+
     // Try label[for]
     if (field.id) {
       const label = document.querySelector(`label[for="${field.id}"]`);
       if (label) {
-        return label.textContent.trim();
+        return getCleanLabelText(label);
       }
     }
 
     // Try parent label
     const parentLabel = field.closest('label');
     if (parentLabel) {
-      return parentLabel.textContent.trim();
+      return getCleanLabelText(parentLabel);
     }
 
     // Try previous sibling label
     const prevLabel = field.previousElementSibling;
     if (prevLabel?.tagName === 'LABEL') {
-      return prevLabel.textContent.trim();
+      return getCleanLabelText(prevLabel);
     }
 
     // Try form group label
@@ -342,7 +439,7 @@ export class DemoApp {
     if (formGroup) {
       const groupLabel = formGroup.querySelector('label');
       if (groupLabel) {
-        return groupLabel.textContent.trim();
+        return getCleanLabelText(groupLabel);
       }
     }
 
@@ -1202,10 +1299,18 @@ export class DemoApp {
       }
     });
 
-    // If no field is selected, disable all
+    // If no field is selected, disable and collapse all
     if (!this.currentField) {
       accordionItems.forEach(item => {
         item.classList.add('fg-accordion-disabled');
+        // Also collapse disabled items
+        if (item.classList.contains('fg-accordion-open')) {
+          item.classList.remove('fg-accordion-open');
+          const header = item.querySelector('.fg-accordion-header');
+          if (header) {
+            header.setAttribute('aria-expanded', 'false');
+          }
+        }
         this.updateAccordionBadge(item, 0);
       });
       ruleCards.forEach(card => {
@@ -1232,6 +1337,15 @@ export class DemoApp {
       const ruleCount = categoryRuleCounts[category] || 0;
 
       item.classList.toggle('fg-accordion-disabled', !isEnabled);
+
+      // Collapse disabled items
+      if (!isEnabled && item.classList.contains('fg-accordion-open')) {
+        item.classList.remove('fg-accordion-open');
+        const header = item.querySelector('.fg-accordion-header');
+        if (header) {
+          header.setAttribute('aria-expanded', 'false');
+        }
+      }
 
       // Update rule count badge
       this.updateAccordionBadge(item, ruleCount);
@@ -1395,6 +1509,10 @@ export class DemoApp {
               input.checked = params[paramName];
             } else {
               input.value = params[paramName];
+              // Trigger input event to update charlist preview badges
+              if (input.classList.contains('fg-charlist-input')) {
+                input.dispatchEvent(new Event('input', { bubbles: true }));
+              }
             }
           }
         });
@@ -1429,18 +1547,7 @@ export class DemoApp {
     const ruleName = ruleCard.dataset.rule;
     const ruleLabel = ruleCard.querySelector('.fg-rule-name')?.textContent;
 
-    // Check if rule is already applied - if so, toggle it off (remove)
-    const fieldId = this.currentField.id || this.currentField.name;
-    const existingRules = this.fieldRules.get(fieldId) || [];
-    const isAlreadyApplied = existingRules.some(r => r.name === ruleName);
-
-    if (isAlreadyApplied) {
-      // Remove the rule (toggle off)
-      this.removeAppliedRule(ruleName);
-      return;
-    }
-
-    // Get parameters
+    // Get current parameters from the UI
     const params = {};
     const paramInputs = ruleCard.querySelectorAll('.fg-param-input, .fg-param-checkbox');
 
@@ -1455,6 +1562,29 @@ export class DemoApp {
         params[paramName] = input.value;
       }
     });
+
+    // Check if rule is already applied
+    const fieldId = this.currentField.id || this.currentField.name;
+    const existingRules = this.fieldRules.get(fieldId) || [];
+    const existingRule = existingRules.find(r => r.name === ruleName);
+
+    if (existingRule) {
+      // Check if params have changed
+      const paramsChanged = JSON.stringify(existingRule.params) !== JSON.stringify(params);
+
+      if (paramsChanged) {
+        // Update the rule with new params
+        console.log('[DemoApp] Updating rule params:', ruleName, 'old:', existingRule.params, 'new:', params);
+        this.addRule(ruleName, ruleLabel, params);
+        this.showNotification(`Updated "${ruleLabel}" rule`);
+      } else {
+        // Same params - toggle off (remove)
+        this.removeAppliedRule(ruleName);
+      }
+      return;
+    }
+
+    console.log('[DemoApp] addRuleFromCard:', ruleName, 'params:', params, 'paramInputs found:', paramInputs.length);
 
     this.addRule(ruleName, ruleLabel, params);
   }
@@ -1543,8 +1673,13 @@ export class DemoApp {
 
       if (!field) return;
 
-      // Remove existing rules for this field
-      this.formGuardian.removeField(`#${fieldId}`);
+      // Determine the correct selector based on whether the field has an id
+      const selector = field.id ? `#${field.id}` : `[name="${field.name}"]`;
+
+      console.log('[DemoApp] About to remove field:', selector, 'element:', field);
+
+      // Remove existing rules for this field - pass element directly to ensure WeakMap lookup works
+      this.formGuardian.removeField(field);
 
       if (rules.length === 0) return;
 
@@ -1566,8 +1701,10 @@ export class DemoApp {
         }
       });
 
+      console.log('[DemoApp] Adding field with rules:', fieldId, 'selector:', selector, rulesConfig);
+
       // Add field with rules
-      this.formGuardian.addField(`#${fieldId}`, rulesConfig);
+      this.formGuardian.addField(selector, rulesConfig);
     });
   }
 

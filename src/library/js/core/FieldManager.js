@@ -2,7 +2,7 @@
  * FieldManager - Manages field registration, configuration and state
  */
 
-import { uniqueId } from '../utils/dom.js';
+import { uniqueId, getFieldLabel } from '../utils/dom.js';
 import { applyInputMask } from '../utils/inputMask.js';
 
 export class FieldManager {
@@ -44,6 +44,7 @@ export class FieldManager {
    * @param {Object} messages
    */
   addField(field, rules, messages = {}) {
+    console.log('[FieldManager] addField called for:', field?.id || field?.name, 'element ref:', field);
     const fieldId = this.getFieldId(field);
     const normalizedRules = this._normalizeRules(rules);
 
@@ -53,11 +54,15 @@ export class FieldManager {
       maskCleanup = applyInputMask(field, normalizedRules);
     }
 
+    // Capture the label text NOW, before tooltip is appended
+    const label = getFieldLabel(field);
+
     const config = {
       element: field,
       rules: normalizedRules,
       messages: messages,
       maskCleanup: maskCleanup,
+      label: label, // Store the clean label text
       state: {
         valid: null, // null = not validated, true/false = validation result
         dirty: false, // User has interacted
@@ -67,6 +72,7 @@ export class FieldManager {
 
     this.fields.set(fieldId, config);
     this.elementToId.set(field, fieldId);
+    console.log('[FieldManager] Field registered:', fieldId, 'in elementToId, verifying:', this.elementToId.get(field));
 
     // Bind field-level events if needed
     this._bindFieldEvents(field);
@@ -77,15 +83,37 @@ export class FieldManager {
    * @param {Element} field
    */
   removeField(field) {
-    const fieldId = this.elementToId.get(field);
+    // Try WeakMap lookup first
+    let fieldId = this.elementToId.get(field);
+    console.log('[FieldManager] removeField called, field:', field?.id || field?.name, 'WeakMap lookup fieldId:', fieldId);
+
+    // Fallback: if WeakMap lookup fails, try to find by id/name in the fields Map
+    // This handles cases where element reference may differ
+    if (!fieldId) {
+      const possibleId = field.id || field.name;
+      if (possibleId && this.fields.has(possibleId)) {
+        fieldId = possibleId;
+        console.log('[FieldManager] Fallback lookup succeeded, found fieldId:', fieldId);
+      }
+    }
+
     if (fieldId) {
       const config = this.fields.get(fieldId);
       // Clean up input mask listeners
       if (config && config.maskCleanup) {
+        console.log('[FieldManager] Calling maskCleanup for field:', fieldId);
         config.maskCleanup();
+      } else {
+        console.log('[FieldManager] No maskCleanup found for field:', fieldId, 'config:', config);
       }
       this.fields.delete(fieldId);
+      // Also try to clean up WeakMap with the element from config
+      if (config && config.element) {
+        this.elementToId.delete(config.element);
+      }
       this.elementToId.delete(field);
+    } else {
+      console.log('[FieldManager] Field not registered');
     }
   }
 
@@ -185,6 +213,16 @@ export class FieldManager {
   getState(field) {
     const config = this.getField(field);
     return config ? config.state : null;
+  }
+
+  /**
+   * Get field label (stored at registration time)
+   * @param {Element} field
+   * @returns {string}
+   */
+  getLabel(field) {
+    const config = this.getField(field);
+    return config ? config.label : getFieldLabel(field);
   }
 
   /**

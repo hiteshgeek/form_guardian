@@ -166,7 +166,7 @@ export class BaseAdapter {
   }
 
   /**
-   * Get field label
+   * Get field label (excludes tooltip content)
    * @param {Element} field
    * @returns {string}
    */
@@ -176,14 +176,19 @@ export class BaseAdapter {
     // Try label with for attribute
     if (id) {
       const label = this.form.querySelector(`label[for="${id}"]`);
-      if (label) return label.textContent.trim();
+      if (label) {
+        // Clone and remove tooltip elements to get just label text
+        const clone = label.cloneNode(true);
+        clone.querySelectorAll('.fg-label-tooltip').forEach(el => el.remove());
+        return clone.textContent.trim();
+      }
     }
 
     // Try parent label
     const parentLabel = closest(field, 'label');
     if (parentLabel) {
       const clone = parentLabel.cloneNode(true);
-      clone.querySelectorAll('input, select, textarea').forEach(el => el.remove());
+      clone.querySelectorAll('input, select, textarea, .fg-label-tooltip').forEach(el => el.remove());
       return clone.textContent.trim();
     }
 

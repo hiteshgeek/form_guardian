@@ -14,10 +14,14 @@ const maskHandlers = {
     const max = typeof params === 'number' ? params : (params.max || params.value);
     if (!max) return null;
 
+    // Also set the native maxlength attribute as a fallback
+    field.setAttribute('maxlength', max);
+
     return (e) => {
       const value = field.value;
-      // Allow control keys (Backspace, Delete, Arrow keys, etc.)
-      if (e.ctrlKey || e.metaKey || e.key.length > 1) return;
+      // Allow control/navigation keys
+      const allowedKeys = ['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Tab', 'Escape', 'Enter', 'Home', 'End'];
+      if (e.ctrlKey || e.metaKey || allowedKeys.includes(e.key)) return;
 
       // Check if adding character would exceed max
       const selectionLength = field.selectionEnd - field.selectionStart;
@@ -162,6 +166,104 @@ const maskHandlers = {
         e.preventDefault();
       }
     };
+  },
+
+  /**
+   * Maximum numeric value
+   */
+  max: (field, params) => {
+    const max = typeof params === 'number' ? params : (params.max || params.value);
+    if (max === undefined || max === null) return null;
+
+    // Set HTML max attribute for number inputs
+    if (field.type === 'number') {
+      field.setAttribute('max', max);
+    }
+
+    return (e) => {
+      const allowedKeys = ['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Tab', 'Escape', 'Enter', 'Home', 'End'];
+      if (e.ctrlKey || e.metaKey || allowedKeys.includes(e.key)) return;
+
+      // Allow minus and decimal point
+      if (e.key === '-' || e.key === '.') return;
+
+      // Simulate what the value would be
+      const start = field.selectionStart;
+      const end = field.selectionEnd;
+      const currentValue = field.value;
+      const newValue = currentValue.substring(0, start) + e.key + currentValue.substring(end);
+
+      // If value ends with decimal or has incomplete decimal, allow typing
+      if (newValue.endsWith('.') || /\.\d*$/.test(newValue) && !newValue.match(/\.\d+$/)) {
+        return;
+      }
+
+      const numValue = parseFloat(newValue);
+
+      // Only prevent if we have a valid complete number that exceeds max
+      if (!isNaN(numValue) && numValue > max) {
+        e.preventDefault();
+      }
+    };
+  },
+
+  /**
+   * Minimum numeric value
+   */
+  min: (field, params) => {
+    const min = typeof params === 'number' ? params : (params.min || params.value);
+    if (min === undefined || min === null) return null;
+
+    // Set HTML min attribute for number inputs
+    if (field.type === 'number') {
+      field.setAttribute('min', min);
+    }
+
+    // We don't prevent typing for min - validation handles it
+    // because user needs to type to reach the minimum
+    return null;
+  },
+
+  /**
+   * Range - combines min and max
+   */
+  range: (field, params) => {
+    if (params.max !== undefined) {
+      // Set HTML max attribute for number inputs
+      if (field.type === 'number') {
+        field.setAttribute('max', params.max);
+        if (params.min !== undefined) {
+          field.setAttribute('min', params.min);
+        }
+      }
+
+      return (e) => {
+        const allowedKeys = ['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Tab', 'Escape', 'Enter', 'Home', 'End'];
+        if (e.ctrlKey || e.metaKey || allowedKeys.includes(e.key)) return;
+
+        // Allow minus and decimal point
+        if (e.key === '-' || e.key === '.') return;
+
+        // Simulate what the value would be
+        const start = field.selectionStart;
+        const end = field.selectionEnd;
+        const currentValue = field.value;
+        const newValue = currentValue.substring(0, start) + e.key + currentValue.substring(end);
+
+        // If value ends with decimal or has incomplete decimal, allow typing
+        if (newValue.endsWith('.') || /\.\d*$/.test(newValue) && !newValue.match(/\.\d+$/)) {
+          return;
+        }
+
+        const numValue = parseFloat(newValue);
+
+        // Only prevent if we have a valid complete number that exceeds max
+        if (!isNaN(numValue) && numValue > params.max) {
+          e.preventDefault();
+        }
+      };
+    }
+    return null;
   },
 
   /**
@@ -416,6 +518,124 @@ const maskHandlers = {
         }
       }
     };
+  },
+
+  /**
+   * No consecutive characters - prevent specified characters from repeating
+   */
+  noConsecutive: (field, params) => {
+    // Handle different param formats - could be object, string, or true
+    let chars;
+    if (typeof params === 'object' && params !== null) {
+      chars = params.chars || params.char || params.value || ' ';
+    } else if (typeof params === 'string') {
+      chars = params;
+    } else {
+      chars = ' '; // default to space
+    }
+
+    console.log('[noConsecutive mask] initialized with chars:', chars, 'params:', params);
+
+    return (e) => {
+      // Allow control/navigation keys
+      const allowedKeys = ['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Tab', 'Escape', 'Enter', 'Home', 'End'];
+      if (e.ctrlKey || e.metaKey || allowedKeys.includes(e.key)) return;
+
+      // Check if the key being pressed is one of the restricted characters
+      if (!chars.includes(e.key)) {
+        console.log('[noConsecutive mask] key not in chars, allowing:', e.key);
+        return;
+      }
+
+      const value = field.value;
+      const cursorPos = field.selectionStart;
+
+      // Get the character before the cursor
+      const charBefore = cursorPos > 0 ? value.charAt(cursorPos - 1) : '';
+
+      console.log('[noConsecutive mask]', { key: e.key, charBefore, cursorPos, wouldPrevent: charBefore === e.key });
+
+      // If the previous character is the same as what we're typing, prevent it
+      if (charBefore === e.key) {
+        console.log('[noConsecutive mask] PREVENTING duplicate char:', e.key);
+        e.preventDefault();
+      }
+    };
+  },
+
+  /**
+   * Max consecutive - limit how many times a character can repeat
+   */
+  maxConsecutive: (field, params) => {
+    // Handle different param formats
+    let chars, maxCount;
+    if (typeof params === 'object' && params !== null) {
+      chars = params.chars || params.char || params.value || ' ';
+      maxCount = params.max || 1;
+    } else {
+      chars = ' ';
+      maxCount = 1;
+    }
+
+    return (e) => {
+      // Allow control/navigation keys
+      const allowedKeys = ['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Tab', 'Escape', 'Enter', 'Home', 'End'];
+      if (e.ctrlKey || e.metaKey || allowedKeys.includes(e.key)) return;
+
+      // Check if the key being pressed is one of the restricted characters
+      if (!chars.includes(e.key)) return;
+
+      const value = field.value;
+      const cursorPos = field.selectionStart;
+
+      // Count consecutive occurrences before cursor
+      let count = 0;
+      for (let i = cursorPos - 1; i >= 0; i--) {
+        if (chars.includes(value.charAt(i))) {
+          count++;
+        } else {
+          break;
+        }
+      }
+
+      // If we already have max consecutive, prevent another
+      if (count >= maxCount) {
+        e.preventDefault();
+      }
+    };
+  },
+
+  /**
+   * No repeated characters - prevent any character from repeating consecutively
+   */
+  noRepeatedChars: (field, params) => {
+    // Handle different param formats
+    let exceptions;
+    if (typeof params === 'object' && params !== null) {
+      exceptions = params.except || '';
+    } else {
+      exceptions = '';
+    }
+
+    return (e) => {
+      // Allow control/navigation keys
+      const allowedKeys = ['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Tab', 'Escape', 'Enter', 'Home', 'End'];
+      if (e.ctrlKey || e.metaKey || allowedKeys.includes(e.key)) return;
+
+      // Skip if this character is in exceptions
+      if (exceptions.includes(e.key)) return;
+
+      const value = field.value;
+      const cursorPos = field.selectionStart;
+
+      // Get the character before the cursor
+      const charBefore = cursorPos > 0 ? value.charAt(cursorPos - 1) : '';
+
+      // If the previous character is the same as what we're typing, prevent it
+      if (charBefore === e.key) {
+        e.preventDefault();
+      }
+    };
   }
 };
 
@@ -483,15 +703,20 @@ const transformHandlers = {
 export function applyInputMask(field, rules) {
   const cleanupFunctions = [];
 
+  console.log('[applyInputMask] called for field:', field.id || field.name, 'rules:', rules);
+
   // Process each rule
   for (const [ruleName, ruleParams] of Object.entries(rules)) {
     // Skip disabled rules
     if (ruleParams === false) continue;
 
+    console.log('[applyInputMask] processing rule:', ruleName, 'params:', ruleParams, 'has handler:', !!maskHandlers[ruleName]);
+
     // Apply keydown mask handler
     if (maskHandlers[ruleName]) {
       const handler = maskHandlers[ruleName](field, ruleParams);
       if (handler) {
+        console.log('[applyInputMask] adding keydown handler for:', ruleName);
         field.addEventListener('keydown', handler);
         cleanupFunctions.push(() => field.removeEventListener('keydown', handler));
       }
@@ -590,6 +815,31 @@ export function applyInputMask(field, rules) {
           }
           break;
         }
+        case 'max': {
+          const maxVal = typeof ruleParams === 'number' ? ruleParams : (ruleParams.max || ruleParams.value);
+          if (maxVal !== undefined) {
+            const resultValue = currentValue.substring(0, start) + filteredText + currentValue.substring(end);
+            const numValue = parseFloat(resultValue);
+            if (!isNaN(numValue) && numValue > maxVal) {
+              // Prevent paste if it would exceed max
+              filteredText = '';
+              shouldPrevent = true;
+            }
+          }
+          break;
+        }
+        case 'range': {
+          if (ruleParams.max !== undefined) {
+            const resultValue = currentValue.substring(0, start) + filteredText + currentValue.substring(end);
+            const numValue = parseFloat(resultValue);
+            if (!isNaN(numValue) && numValue > ruleParams.max) {
+              // Prevent paste if it would exceed max
+              filteredText = '';
+              shouldPrevent = true;
+            }
+          }
+          break;
+        }
       }
     }
 
@@ -607,6 +857,7 @@ export function applyInputMask(field, rules) {
 
   // Return cleanup function
   return () => {
+    console.log('[applyInputMask] Cleanup called for field:', field.id || field.name, 'removing', cleanupFunctions.length, 'listeners');
     cleanupFunctions.forEach(fn => fn());
   };
 }
